@@ -50,6 +50,22 @@ export interface Supplier {
   payments: PaymentRecord[];
 }
 
+export interface ShopSettings {
+  shopName: string;
+  address: string;
+  phone: string;
+  currencySymbol: string;
+  taxRate: number;
+}
+
+export const initialSettings: ShopSettings = {
+  shopName: 'স্মার্ট দোকান',
+  address: 'ঢাকা, বাংলাদেশ',
+  phone: '01700000000',
+  currencySymbol: '৳',
+  taxRate: 0,
+};
+
 export const initialProducts: Product[] = [
   { id: 'p1', name: 'মিনিকেট চাল (২৫ কেজি)', category: 'চাল', buyPrice: 1500, sellPrice: 1650, stock: 50, image: 'https://picsum.photos/seed/rice/200' },
   { id: 'p2', name: 'সয়াবিন তেল (৫ লিটার)', category: 'তেল', buyPrice: 750, sellPrice: 820, stock: 30, image: 'https://picsum.photos/seed/oil/200' },

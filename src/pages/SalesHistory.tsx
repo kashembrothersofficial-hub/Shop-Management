@@ -5,7 +5,7 @@ import { format } from 'date-fns';
 import { Search, Calendar, Eye, X, Receipt } from 'lucide-react';
 
 export const SalesHistory: React.FC = () => {
-  const { sales } = useAppContext();
+  const { sales, settings } = useAppContext();
   const [searchQuery, setSearchQuery] = useState('');
   const [dateFilter, setDateFilter] = useState('');
   const [selectedSale, setSelectedSale] = useState<Sale | null>(null);
@@ -102,8 +102,10 @@ export const SalesHistory: React.FC = () => {
             
             <div className="p-6 overflow-y-auto bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
               <div className="text-center mb-6 border-b border-dashed border-gray-300 dark:border-gray-600 pb-4">
-                <h3 className="text-2xl font-bold mb-1">স্মার্ট দোকান</h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400">তারিখ: {format(new Date(selectedSale.date), 'dd/MM/yyyy hh:mm a')}</p>
+                <h3 className="text-2xl font-bold mb-1">{settings.shopName}</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{settings.address}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">ফোন: {settings.phone}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">তারিখ: {format(new Date(selectedSale.date), 'dd/MM/yyyy hh:mm a')}</p>
                 <p className="text-sm text-gray-500 dark:text-gray-400 font-mono mt-1">ইনভয়েস: {selectedSale.id}</p>
               </div>
 

@@ -1,18 +1,20 @@
 import React, { useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
-import { ShoppingCart, Package, History, Users, Truck, Sun, Moon, Menu, X } from 'lucide-react';
+import { ShoppingCart, Package, History, Users, Truck, Sun, Moon, Menu, X, LayoutDashboard, Settings as SettingsIcon } from 'lucide-react';
 
 export const Layout: React.FC = () => {
-  const { theme, toggleTheme } = useAppContext();
+  const { theme, toggleTheme, settings } = useAppContext();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const navItems = [
-    { to: '/', icon: <ShoppingCart size={20} />, label: 'বিক্রয় কেন্দ্র' },
+    { to: '/', icon: <LayoutDashboard size={20} />, label: 'ড্যাশবোর্ড' },
+    { to: '/pos', icon: <ShoppingCart size={20} />, label: 'বিক্রয় কেন্দ্র' },
     { to: '/inventory', icon: <Package size={20} />, label: 'স্টক ম্যানেজমেন্ট' },
     { to: '/sales-history', icon: <History size={20} />, label: 'বিক্রয়ের ইতিহাস' },
     { to: '/customer-dues', icon: <Users size={20} />, label: 'বকেয়া খাতা' },
     { to: '/supplier-payments', icon: <Truck size={20} />, label: 'সাপ্লায়ার পেমেন্ট' },
+    { to: '/settings', icon: <SettingsIcon size={20} />, label: 'সেটিংস' },
   ];
 
   return (
@@ -30,7 +32,7 @@ export const Layout: React.FC = () => {
         className={`fixed lg:static inset-y-0 left-0 z-30 w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 transition-transform duration-300 ease-in-out flex flex-col`}
       >
         <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200 dark:border-gray-700">
-          <span className="text-xl font-bold text-blue-600 dark:text-blue-400">স্মার্ট দোকান</span>
+          <span className="text-xl font-bold text-blue-600 dark:text-blue-400 truncate">{settings.shopName}</span>
           <button onClick={() => setIsSidebarOpen(false)} className="lg:hidden text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
             <X size={24} />
           </button>
@@ -80,7 +82,7 @@ export const Layout: React.FC = () => {
           <button onClick={() => setIsSidebarOpen(true)} className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
             <Menu size={24} />
           </button>
-          <span className="text-xl font-bold text-blue-600 dark:text-blue-400">স্মার্ট দোকান</span>
+          <span className="text-xl font-bold text-blue-600 dark:text-blue-400 truncate">{settings.shopName}</span>
           <div className="w-6" /> {/* Spacer for centering */}
         </header>
         <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Product, Sale, Customer, Supplier, initialProducts, initialSales, initialCustomers, initialSuppliers } from '../utils/mockData';
+import { Product, Sale, Customer, Supplier, ShopSettings, initialProducts, initialSales, initialCustomers, initialSuppliers, initialSettings } from '../utils/mockData';
 
 interface AppContextType {
   theme: 'light' | 'dark';
@@ -12,6 +12,8 @@ interface AppContextType {
   setCustomers: React.Dispatch<React.SetStateAction<Customer[]>>;
   suppliers: Supplier[];
   setSuppliers: React.Dispatch<React.SetStateAction<Supplier[]>>;
+  settings: ShopSettings;
+  setSettings: React.Dispatch<React.SetStateAction<ShopSettings>>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -42,6 +44,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return saved ? JSON.parse(saved) : initialSuppliers;
   });
 
+  const [settings, setSettings] = useState<ShopSettings>(() => {
+    const saved = localStorage.getItem('settings');
+    return saved ? JSON.parse(saved) : initialSettings;
+  });
+
   useEffect(() => {
     localStorage.setItem('theme', theme);
     if (theme === 'dark') {
@@ -67,10 +74,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     localStorage.setItem('suppliers', JSON.stringify(suppliers));
   }, [suppliers]);
 
+  useEffect(() => {
+    localStorage.setItem('settings', JSON.stringify(settings));
+  }, [settings]);
+
   const toggleTheme = () => setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
 
   return (
-    <AppContext.Provider value={{ theme, toggleTheme, products, setProducts, sales, setSales, customers, setCustomers, suppliers, setSuppliers }}>
+    <AppContext.Provider value={{ theme, toggleTheme, products, setProducts, sales, setSales, customers, setCustomers, suppliers, setSuppliers, settings, setSettings }}>
       {children}
     </AppContext.Provider>
   );
