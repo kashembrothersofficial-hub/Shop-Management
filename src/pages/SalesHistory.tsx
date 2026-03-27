@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { Sale } from '../utils/mockData';
 import { format } from 'date-fns';
-import { Search, Calendar, Eye, X, Receipt } from 'lucide-react';
+import { Search, Calendar, Eye, X, Receipt, Printer, Share2 } from 'lucide-react';
 
 export const SalesHistory: React.FC = () => {
   const { sales, settings } = useAppContext();
@@ -15,6 +15,29 @@ export const SalesHistory: React.FC = () => {
     const matchesDate = dateFilter ? sale.date.startsWith(dateFilter) : true;
     return matchesSearch && matchesDate;
   });
+
+  const shareOnWhatsApp = (sale: Sale) => {
+    let text = `*${settings.shopName}*\n`;
+    text += `ইনভয়েস: ${sale.id}\n`;
+    text += `তারিখ: ${format(new Date(sale.date), 'dd/MM/yyyy hh:mm a')}\n`;
+    text += `ক্রেতা: ${sale.customerName}\n\n`;
+    
+    sale.items.forEach(item => {
+      text += `${item.name} x ${item.quantity} = ৳${item.total}\n`;
+    });
+    
+    text += `\nমোট: ৳${sale.totalAmount}\n`;
+    if (sale.discount > 0) text += `ডিসকাউন্ট: -৳${sale.discount}\n`;
+    if (sale.vat > 0) text += `ভ্যাট: +৳${sale.vat}\n`;
+    text += `*সর্বমোট: ৳${sale.finalTotal || sale.totalAmount}*\n`;
+    text += `প্রদত্ত: ৳${sale.paidAmount}\n`;
+    if (sale.dueAmount > 0) text += `*বকেয়া: ৳${sale.dueAmount}*\n`;
+    
+    text += `\nধন্যবাদ!`;
+    
+    const encodedText = encodeURIComponent(text);
+    window.open(`https://wa.me/?text=${encodedText}`, '_blank');
+  };
 
   return (
     <div className="flex flex-col h-full bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
@@ -62,7 +85,7 @@ export const SalesHistory: React.FC = () => {
                 <td className="p-4 text-gray-900 dark:text-gray-100">{format(new Date(sale.date), 'dd MMM, yyyy')}</td>
                 <td className="p-4 text-gray-500 dark:text-gray-400 font-mono text-xs">{sale.id}</td>
                 <td className="p-4 font-medium text-gray-900 dark:text-gray-100">{sale.customerName}</td>
-                <td className="p-4 text-right font-bold text-gray-900 dark:text-gray-100">৳{sale.totalAmount}</td>
+                <td className="p-4 text-right font-bold text-gray-900 dark:text-gray-100">৳{sale.finalTotal || sale.totalAmount}</td>
                 <td className="p-4 text-right text-green-600 dark:text-green-400">৳{sale.paidAmount}</td>
                 <td className="p-4 text-right text-red-600 dark:text-red-400">৳{sale.dueAmount}</td>
                 <td className="p-4 text-center">
@@ -100,7 +123,7 @@ export const SalesHistory: React.FC = () => {
               </button>
             </div>
             
-            <div className="p-6 overflow-y-auto bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
+            <div id="receipt-content" className="p-6 overflow-y-auto bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
               <div className="text-center mb-6 border-b border-dashed border-gray-300 dark:border-gray-600 pb-4">
                 <h3 className="text-2xl font-bold mb-1">{settings.shopName}</h3>
                 <p className="text-sm text-gray-500 dark:text-gray-400">{settings.address}</p>
@@ -135,11 +158,27 @@ export const SalesHistory: React.FC = () => {
               </table>
 
               <div className="space-y-2 border-t border-gray-200 dark:border-gray-700 pt-4">
-                <div className="flex justify-between font-bold text-lg">
-                  <span>সর্বমোট:</span>
+                <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                  <span>মোট:</span>
                   <span>৳{selectedSale.totalAmount}</span>
                 </div>
-                <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                {selectedSale.discount > 0 && (
+                  <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                    <span>ডিসকাউন্ট:</span>
+                    <span>-৳{selectedSale.discount}</span>
+                  </div>
+                )}
+                {selectedSale.vat > 0 && (
+                  <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                    <span>ভ্যাট:</span>
+                    <span>+৳{selectedSale.vat}</span>
+                  </div>
+                )}
+                <div className="flex justify-between font-bold text-lg pt-2 border-t border-gray-200 dark:border-gray-700">
+                  <span>সর্বমোট:</span>
+                  <span>৳{selectedSale.finalTotal || selectedSale.totalAmount}</span>
+                </div>
+                <div className="flex justify-between text-gray-600 dark:text-gray-400 pt-2">
                   <span>প্রদত্ত:</span>
                   <span>৳{selectedSale.paidAmount}</span>
                 </div>
@@ -156,11 +195,19 @@ export const SalesHistory: React.FC = () => {
               </div>
             </div>
 
-            <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 flex justify-end">
+            <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 flex justify-end gap-3">
+              <button
+                onClick={() => shareOnWhatsApp(selectedSale)}
+                className="flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors"
+              >
+                <Share2 size={18} className="mr-2" />
+                WhatsApp-এ পাঠান
+              </button>
               <button
                 onClick={() => window.print()}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+                className="flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
               >
+                <Printer size={18} className="mr-2" />
                 প্রিন্ট করুন
               </button>
             </div>

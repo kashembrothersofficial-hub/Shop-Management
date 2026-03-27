@@ -14,6 +14,7 @@ export interface CartItem {
   name: string;
   quantity: number;
   price: number;
+  buyPrice?: number;
   total: number;
 }
 
@@ -22,9 +23,44 @@ export interface Sale {
   date: string;
   items: CartItem[];
   totalAmount: number;
+  discount: number;
+  vat: number;
+  finalTotal: number;
+  profit: number;
   customerName: string;
   paidAmount: number;
   dueAmount: number;
+}
+
+export interface HeldSale {
+  id: string;
+  date: string;
+  items: CartItem[];
+  customerName: string;
+  note: string;
+}
+
+export interface Employee {
+  id: string;
+  name: string;
+  phone: string;
+  joinDate: string;
+}
+
+export interface AttendanceRecord {
+  id: string;
+  employeeId: string;
+  date: string;
+  status: 'present' | 'absent' | 'leave';
+}
+
+export interface DayCloseRecord {
+  id: string;
+  date: string;
+  totalSales: number;
+  totalCash: number;
+  totalProfit: number;
+  note: string;
 }
 
 export interface PaymentRecord {
@@ -90,12 +126,21 @@ export const initialSales: Sale[] = [
     id: 'sale1',
     date: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
     items: [
-      { id: 'ci1', productId: 'p1', name: 'মিনিকেট চাল (২৫ কেজি)', quantity: 1, price: 1650, total: 1650 },
-      { id: 'ci2', productId: 'p2', name: 'সয়াবিন তেল (৫ লিটার)', quantity: 2, price: 820, total: 1640 },
+      { id: 'ci1', productId: 'p1', name: 'মিনিকেট চাল (২৫ কেজি)', quantity: 1, price: 1650, buyPrice: 1500, total: 1650 },
+      { id: 'ci2', productId: 'p2', name: 'সয়াবিন তেল (৫ লিটার)', quantity: 2, price: 820, buyPrice: 750, total: 1640 },
     ],
     totalAmount: 3290,
+    discount: 0,
+    vat: 0,
+    finalTotal: 3290,
+    profit: 290,
     customerName: 'রহিম মিয়া',
     paidAmount: 3000,
     dueAmount: 290,
   }
+];
+
+export const initialEmployees: Employee[] = [
+  { id: 'emp1', name: 'শফিক ইসলাম', phone: '01900000001', joinDate: new Date().toISOString() },
+  { id: 'emp2', name: 'আরিফ হোসেন', phone: '01900000002', joinDate: new Date().toISOString() },
 ];

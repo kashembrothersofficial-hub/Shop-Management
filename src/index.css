@@ -8,3 +8,26 @@
 body {
   font-family: "Hind Siliguri", sans-serif;
 }
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #receipt-content, #receipt-content * {
+    visibility: visible;
+  }
+  #receipt-content {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 20px;
+    background: white !important;
+    color: black !important;
+  }
+  /* Hide scrollbars and extra UI */
+  .fixed {
+    position: absolute !important;
+  }
+}

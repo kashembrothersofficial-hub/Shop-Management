@@ -1,13 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { Product } from '../utils/mockData';
-import { Plus, Edit, Trash2, Search, X } from 'lucide-react';
+import { Plus, Edit, Trash2, Search, X, Download, Upload, Filter } from 'lucide-react';
 
 export const Inventory: React.FC = () => {
   const { products, setProducts } = useAppContext();
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState<Partial<Product>>({
     name: '',
@@ -18,10 +20,94 @@ export const Inventory: React.FC = () => {
     image: ''
   });
 
-  const filteredProducts = products.filter(p => 
-    p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    p.category.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const categories = useMemo(() => {
+    const cats = new Set(products.map(p => p.category));
+    return Array.from(cats);
+  }, [products]);
+
+  const filteredProducts = products.filter(p => {
+    const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          p.category.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory = selectedCategory === 'all' || p.category === selectedCategory;
+    return matchesSearch && matchesCategory;
+  });
+
+  const handleExportCSV = () => {
+    const headers = ['ID', 'Name', 'Category', 'BuyPrice', 'SellPrice', 'Stock', 'ImageURL'];
+    const csvContent = [
+      headers.join(','),
+      ...products.map(p => `${p.id},"${p.name}","${p.category}",${p.buyPrice},${p.sellPrice},${p.stock},"${p.image}"`)
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `inventory_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleImportCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const text = event.target?.result as string;
+        const lines = text.split('\n');
+        const headers = lines[0].split(',');
+        
+        const newProducts: Product[] = [];
+        
+        for (let i = 1; i < lines.length; i++) {
+          if (!lines[i].trim()) continue;
+          
+          // Simple CSV parser (doesn't handle commas inside quotes perfectly, but good enough for basic use)
+          const values = lines[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+          
+          if (values.length >= 6) {
+            newProducts.push({
+              id: values[0].replace(/"/g, '').trim() || `p-${Date.now()}-${i}`,
+              name: values[1].replace(/"/g, '').trim(),
+              category: values[2].replace(/"/g, '').trim(),
+              buyPrice: Number(values[3]) || 0,
+              sellPrice: Number(values[4]) || 0,
+              stock: Number(values[5]) || 0,
+              image: values[6] ? values[6].replace(/"/g, '').trim() : `https://picsum.photos/seed/${Date.now()}-${i}/200`
+            });
+          }
+        }
+        
+        if (newProducts.length > 0) {
+          // Merge with existing products, updating if ID matches, adding if new
+          const existingIds = new Set(products.map(p => p.id));
+          const updatedProducts = [...products];
+          
+          newProducts.forEach(np => {
+            const index = updatedProducts.findIndex(p => p.id === np.id);
+            if (index >= 0) {
+              updatedProducts[index] = np;
+            } else {
+              updatedProducts.push(np);
+            }
+          });
+          
+          setProducts(updatedProducts);
+          alert(`${newProducts.length} টি পণ্য সফলভাবে ইম্পোর্ট করা হয়েছে।`);
+        }
+      } catch (error) {
+        console.error('Error parsing CSV:', error);
+        alert('CSV ফাইল পড়ার সময় সমস্যা হয়েছে। সঠিক ফরম্যাট ব্যবহার করুন।');
+      }
+    };
+    reader.readAsText(file);
+    // Reset input
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
 
   const handleOpenModal = (product?: Product) => {
     if (product) {
@@ -73,8 +159,8 @@ export const Inventory: React.FC = () => {
     <div className="flex flex-col h-full bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
       <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row justify-between items-center gap-4">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">স্টক ম্যানেজমেন্ট</h1>
-        <div className="flex w-full sm:w-auto gap-2">
-          <div className="relative flex-1 sm:w-64">
+        <div className="flex flex-wrap w-full sm:w-auto gap-2">
+          <div className="relative flex-1 sm:w-48">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
             <input
               type="text"
@@ -84,13 +170,53 @@ export const Inventory: React.FC = () => {
               className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
             />
           </div>
-          <button
-            onClick={() => handleOpenModal()}
-            className="flex items-center justify-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors whitespace-nowrap"
-          >
-            <Plus size={20} className="mr-2" />
-            নতুন পণ্য
-          </button>
+          
+          <div className="relative">
+            <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+            <select
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="pl-10 pr-8 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 outline-none appearance-none"
+            >
+              <option value="all">সব ক্যাটাগরি</option>
+              {categories.map(cat => (
+                <option key={cat} value={cat}>{cat}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex gap-2">
+            <input 
+              type="file" 
+              accept=".csv" 
+              className="hidden" 
+              ref={fileInputRef}
+              onChange={handleImportCSV}
+            />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="flex items-center justify-center px-3 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg font-medium transition-colors whitespace-nowrap"
+              title="আপলোড এক্সেল (CSV)"
+            >
+              <Upload size={18} className="mr-1" />
+              <span className="hidden sm:inline">ইম্পোর্ট</span>
+            </button>
+            <button
+              onClick={handleExportCSV}
+              className="flex items-center justify-center px-3 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg font-medium transition-colors whitespace-nowrap"
+              title="ডাউনলোড এক্সেল (CSV)"
+            >
+              <Download size={18} className="mr-1" />
+              <span className="hidden sm:inline">এক্সপোর্ট</span>
+            </button>
+            <button
+              onClick={() => handleOpenModal()}
+              className="flex items-center justify-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors whitespace-nowrap"
+            >
+              <Plus size={20} className="mr-2" />
+              নতুন পণ্য
+            </button>
+          </div>
         </div>
       </div>
 

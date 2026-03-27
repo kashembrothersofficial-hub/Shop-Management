@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
-import { ShoppingCart, Package, History, Users, Truck, Sun, Moon, Menu, X, LayoutDashboard, Settings as SettingsIcon } from 'lucide-react';
+import { ShoppingCart, Package, History, Users, Truck, Sun, Moon, Menu, X, LayoutDashboard, Settings as SettingsIcon, BarChart3, UserCheck } from 'lucide-react';
 
 export const Layout: React.FC = () => {
   const { theme, toggleTheme, settings } = useAppContext();
@@ -11,6 +11,8 @@ export const Layout: React.FC = () => {
     { to: '/', icon: <LayoutDashboard size={20} />, label: 'ড্যাশবোর্ড' },
     { to: '/pos', icon: <ShoppingCart size={20} />, label: 'বিক্রয় কেন্দ্র' },
     { to: '/inventory', icon: <Package size={20} />, label: 'স্টক ম্যানেজমেন্ট' },
+    { to: '/reports', icon: <BarChart3 size={20} />, label: 'রিপোর্ট' },
+    { to: '/attendance', icon: <UserCheck size={20} />, label: 'স্টাফ হাজিরা' },
     { to: '/sales-history', icon: <History size={20} />, label: 'বিক্রয়ের ইতিহাস' },
     { to: '/customer-dues', icon: <Users size={20} />, label: 'বকেয়া খাতা' },
     { to: '/supplier-payments', icon: <Truck size={20} />, label: 'সাপ্লায়ার পেমেন্ট' },
