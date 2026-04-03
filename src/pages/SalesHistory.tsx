@@ -66,14 +66,14 @@ export const SalesHistory: React.FC = () => {
         </div>
       </div>
 
-      <div className="flex-1 overflow-x-auto">
+      <div className="flex-1 overflow-x-auto whitespace-nowrap">
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="bg-gray-50 dark:bg-gray-700/50 text-gray-500 dark:text-gray-400 text-sm uppercase tracking-wider border-b border-gray-200 dark:border-gray-700">
               <th className="p-4 font-medium">তারিখ</th>
-              <th className="p-4 font-medium">ইনভয়েস নং</th>
+              <th className="p-4 font-medium hidden sm:table-cell">ইনভয়েস নং</th>
               <th className="p-4 font-medium">ক্রেতার নাম</th>
-              <th className="p-4 font-medium text-right">মোট মূল্য</th>
+              <th className="p-4 font-medium text-right hidden sm:table-cell">মোট মূল্য</th>
               <th className="p-4 font-medium text-right">প্রদত্ত</th>
               <th className="p-4 font-medium text-right">বকেয়া</th>
               <th className="p-4 font-medium text-center">অ্যাকশন</th>
@@ -83,9 +83,9 @@ export const SalesHistory: React.FC = () => {
             {filteredSales.map(sale => (
               <tr key={sale.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                 <td className="p-4 text-gray-900 dark:text-gray-100">{format(new Date(sale.date), 'dd MMM, yyyy')}</td>
-                <td className="p-4 text-gray-500 dark:text-gray-400 font-mono text-xs">{sale.id}</td>
+                <td className="p-4 text-gray-500 dark:text-gray-400 font-mono text-xs hidden sm:table-cell">{sale.id}</td>
                 <td className="p-4 font-medium text-gray-900 dark:text-gray-100">{sale.customerName}</td>
-                <td className="p-4 text-right font-bold text-gray-900 dark:text-gray-100">৳{sale.finalTotal || sale.totalAmount}</td>
+                <td className="p-4 text-right font-bold text-gray-900 dark:text-gray-100 hidden sm:table-cell">৳{sale.finalTotal || sale.totalAmount}</td>
                 <td className="p-4 text-right text-green-600 dark:text-green-400">৳{sale.paidAmount}</td>
                 <td className="p-4 text-right text-red-600 dark:text-red-400">৳{sale.dueAmount}</td>
                 <td className="p-4 text-center">
@@ -112,7 +112,7 @@ export const SalesHistory: React.FC = () => {
       {/* Receipt Modal */}
       {selectedSale && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-[95%] max-w-md overflow-hidden flex flex-col max-h-[90vh]">
             <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
               <div className="flex items-center text-gray-900 dark:text-gray-100">
                 <Receipt className="mr-2" size={24} />

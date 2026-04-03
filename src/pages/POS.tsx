@@ -16,6 +16,7 @@ export const POS: React.FC = () => {
   const [vat, setVat] = useState<number | ''>('');
   const [isScanning, setIsScanning] = useState(false);
   const [showHeldSales, setShowHeldSales] = useState(false);
+  const [isMobileCartOpen, setIsMobileCartOpen] = useState(false);
   const [completedSale, setCompletedSale] = useState<Sale | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -221,6 +222,7 @@ export const POS: React.FC = () => {
     setPaidAmount('');
     setDiscount('');
     setVat('');
+    setIsMobileCartOpen(false);
   };
 
   const shareOnWhatsApp = (sale: Sale) => {
@@ -280,7 +282,7 @@ export const POS: React.FC = () => {
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4">
+        <div className="flex-1 overflow-y-auto p-4 pb-24 lg:pb-4">
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
             {filteredProducts.map(product => (
               <div 
@@ -308,9 +310,14 @@ export const POS: React.FC = () => {
       </div>
 
       {/* Right: Cart & Checkout */}
-      <div className="w-full lg:w-[400px] flex flex-col bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <div className={`w-full lg:w-[400px] flex flex-col bg-white dark:bg-gray-800 lg:rounded-xl shadow-sm border-l lg:border border-gray-200 dark:border-gray-700 overflow-hidden fixed lg:static inset-0 z-40 lg:z-auto transition-transform duration-300 ${isMobileCartOpen ? 'translate-y-0' : 'translate-y-full lg:translate-y-0'}`}>
         <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 flex justify-between items-center">
-          <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">বর্তমান বিক্রয়</h2>
+          <div className="flex items-center gap-2">
+            <button onClick={() => setIsMobileCartOpen(false)} className="lg:hidden p-2 -ml-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+              <X size={24} />
+            </button>
+            <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">বর্তমান বিক্রয়</h2>
+          </div>
           <div className="flex gap-2">
             <button
               onClick={() => setShowHeldSales(true)}
@@ -456,6 +463,22 @@ export const POS: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* Mobile Sticky Bottom Bar */}
+      {!isMobileCartOpen && (
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 p-4 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] z-30">
+          <button
+            onClick={() => setIsMobileCartOpen(true)}
+            className="w-full flex items-center justify-between px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold text-lg transition-colors shadow-md"
+          >
+            <div className="flex items-center gap-2">
+              <ShoppingCart size={24} />
+              <span>কার্ট দেখুন ({cart.length})</span>
+            </div>
+            <span>৳{finalTotal}</span>
+          </button>
+        </div>
+      )}
 
       {/* Held Sales Modal */}
       {showHeldSales && (

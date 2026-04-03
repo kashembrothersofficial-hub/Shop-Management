@@ -74,7 +74,7 @@ export const Reports: React.FC = () => {
       <h1 className="text-2xl font-bold text-gray-800 dark:text-white">রিপোর্ট ও অ্যানালিটিক্স</h1>
 
       {/* Tabs */}
-      <div className="flex space-x-2 border-b border-gray-200 dark:border-gray-700 pb-2">
+      <div className="flex space-x-2 border-b border-gray-200 dark:border-gray-700 pb-2 overflow-x-auto whitespace-nowrap">
         <button
           onClick={() => setActiveTab('profit')}
           className={`px-4 py-2 rounded-t-lg font-medium transition-colors ${
@@ -163,7 +163,7 @@ export const Reports: React.FC = () => {
               </ResponsiveContainer>
             </div>
 
-            <div className="overflow-x-auto mt-6">
+            <div className="overflow-x-auto whitespace-nowrap mt-6">
               <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
                 <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-300">
                   <tr>
@@ -241,7 +241,7 @@ export const Reports: React.FC = () => {
             {dayCloseRecords.length > 0 && (
               <div className="mt-8">
                 <h4 className="text-md font-medium text-gray-800 dark:text-gray-200 mb-3">পূর্বের হিসাবসমূহ</h4>
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto whitespace-nowrap">
                   <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
                     <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-300">
                       <tr>

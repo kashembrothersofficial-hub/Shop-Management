@@ -220,14 +220,14 @@ export const Inventory: React.FC = () => {
         </div>
       </div>
 
-      <div className="flex-1 overflow-x-auto">
+      <div className="flex-1 overflow-x-auto whitespace-nowrap">
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="bg-gray-50 dark:bg-gray-700/50 text-gray-500 dark:text-gray-400 text-sm uppercase tracking-wider border-b border-gray-200 dark:border-gray-700">
               <th className="p-4 font-medium">ছবি</th>
               <th className="p-4 font-medium">পণ্যের নাম</th>
-              <th className="p-4 font-medium">ক্যাটাগরি</th>
-              <th className="p-4 font-medium text-right">ক্রয় মূল্য</th>
+              <th className="p-4 font-medium hidden sm:table-cell">ক্যাটাগরি</th>
+              <th className="p-4 font-medium text-right hidden sm:table-cell">ক্রয় মূল্য</th>
               <th className="p-4 font-medium text-right">বিক্রয় মূল্য</th>
               <th className="p-4 font-medium text-right">স্টক</th>
               <th className="p-4 font-medium text-center">অ্যাকশন</th>
@@ -240,8 +240,8 @@ export const Inventory: React.FC = () => {
                   <img src={product.image} alt={product.name} className="w-10 h-10 rounded object-cover bg-gray-200 dark:bg-gray-600" />
                 </td>
                 <td className="p-4 font-medium text-gray-900 dark:text-gray-100">{product.name}</td>
-                <td className="p-4 text-gray-500 dark:text-gray-400">{product.category}</td>
-                <td className="p-4 text-right text-gray-900 dark:text-gray-100">৳{product.buyPrice}</td>
+                <td className="p-4 text-gray-500 dark:text-gray-400 hidden sm:table-cell">{product.category}</td>
+                <td className="p-4 text-right text-gray-900 dark:text-gray-100 hidden sm:table-cell">৳{product.buyPrice}</td>
                 <td className="p-4 text-right text-gray-900 dark:text-gray-100">৳{product.sellPrice}</td>
                 <td className="p-4 text-right">
                   <span className={`px-2 py-1 rounded-full text-xs font-medium ${product.stock < 10 ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'}`}>
@@ -274,7 +274,7 @@ export const Inventory: React.FC = () => {
       {/* Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-[95%] max-w-md overflow-hidden flex flex-col max-h-[90vh]">
             <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700">
               <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">
                 {editingProduct ? 'পণ্য সম্পাদনা' : 'নতুন পণ্য যুক্ত করুন'}

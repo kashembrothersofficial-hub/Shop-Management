@@ -83,12 +83,12 @@ export const SupplierPayments: React.FC = () => {
         </div>
       </div>
 
-      <div className="flex-1 overflow-x-auto">
+      <div className="flex-1 overflow-x-auto whitespace-nowrap">
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="bg-gray-50 dark:bg-gray-700/50 text-gray-500 dark:text-gray-400 text-sm uppercase tracking-wider border-b border-gray-200 dark:border-gray-700">
               <th className="p-4 font-medium">সাপ্লায়ারের নাম</th>
-              <th className="p-4 font-medium">ফোন নম্বর</th>
+              <th className="p-4 font-medium hidden sm:table-cell">ফোন নম্বর</th>
               <th className="p-4 font-medium text-right">মোট প্রদেয়</th>
               <th className="p-4 font-medium text-center">অ্যাকশন</th>
             </tr>
@@ -97,7 +97,7 @@ export const SupplierPayments: React.FC = () => {
             {filteredSuppliers.map(supplier => (
               <tr key={supplier.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                 <td className="p-4 font-medium text-gray-900 dark:text-gray-100">{supplier.name}</td>
-                <td className="p-4 text-gray-500 dark:text-gray-400">{supplier.phone || 'N/A'}</td>
+                <td className="p-4 text-gray-500 dark:text-gray-400 hidden sm:table-cell">{supplier.phone || 'N/A'}</td>
                 <td className="p-4 text-right">
                   <span className={`font-bold ${supplier.totalDue > 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
                     ৳{supplier.totalDue}
@@ -138,7 +138,7 @@ export const SupplierPayments: React.FC = () => {
       {/* Payment Modal */}
       {isPaymentModalOpen && selectedSupplier && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md overflow-hidden flex flex-col">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-[95%] max-w-md overflow-hidden flex flex-col">
             <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
               <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">সাপ্লায়ার পেমেন্ট</h2>
               <button onClick={() => setIsPaymentModalOpen(false)} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
@@ -197,7 +197,7 @@ export const SupplierPayments: React.FC = () => {
       {/* History Modal */}
       {isHistoryModalOpen && selectedSupplier && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-[95%] max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
             <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
               <div>
                 <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">পেমেন্টের ইতিহাস</h2>

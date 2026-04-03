@@ -73,22 +73,24 @@ export const Dashboard: React.FC = () => {
             {lowStockProducts.length === 0 ? (
               <p className="text-gray-500 dark:text-gray-400 text-center py-4">কোনো লো স্টক প্রোডাক্ট নেই</p>
             ) : (
-              <table className="w-full text-left">
-                <thead>
-                  <tr className="text-sm text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
-                    <th className="pb-2">প্রোডাক্ট</th>
-                    <th className="pb-2 text-right">স্টক</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-                  {lowStockProducts.map(p => (
-                    <tr key={p.id}>
-                      <td className="py-2 text-gray-900 dark:text-gray-100">{p.name}</td>
-                      <td className="py-2 text-right font-bold text-red-600 dark:text-red-400">{p.stock}</td>
+              <div className="overflow-x-auto whitespace-nowrap">
+                <table className="w-full text-left">
+                  <thead>
+                    <tr className="text-sm text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
+                      <th className="pb-2">প্রোডাক্ট</th>
+                      <th className="pb-2 text-right">স্টক</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                    {lowStockProducts.map(p => (
+                      <tr key={p.id}>
+                        <td className="py-2 text-gray-900 dark:text-gray-100">{p.name}</td>
+                        <td className="py-2 text-right font-bold text-red-600 dark:text-red-400">{p.stock}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
         </div>

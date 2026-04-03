@@ -131,12 +131,12 @@ export const Attendance: React.FC = () => {
               <p>কোনো স্টাফ যোগ করা হয়নি।</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto whitespace-nowrap">
               <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
                 <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-300">
                   <tr>
                     <th className="px-4 py-3">স্টাফের নাম</th>
-                    <th className="px-4 py-3">ফোন</th>
+                    <th className="px-4 py-3 hidden sm:table-cell">ফোন</th>
                     <th className="px-4 py-3 text-center">হাজিরা স্ট্যাটাস</th>
                     <th className="px-4 py-3 text-right">অ্যাকশন</th>
                   </tr>
@@ -149,7 +149,7 @@ export const Attendance: React.FC = () => {
                         <td className="px-4 py-4 font-medium text-gray-900 dark:text-white">
                           {emp.name}
                         </td>
-                        <td className="px-4 py-4">{emp.phone || '-'}</td>
+                        <td className="px-4 py-4 hidden sm:table-cell">{emp.phone || '-'}</td>
                         <td className="px-4 py-4">
                           <div className="flex items-center justify-center space-x-2">
                             <button
