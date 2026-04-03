@@ -1,9 +1,11 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Product, Sale, Customer, Supplier, ShopSettings, HeldSale, Employee, AttendanceRecord, DayCloseRecord, initialProducts, initialSales, initialCustomers, initialSuppliers, initialSettings, initialEmployees } from '../utils/mockData';
+import { Product, Sale, Customer, Supplier, ShopSettings, HeldSale, Employee, AttendanceRecord, DayCloseRecord, User, Expense, ReturnRecord, initialProducts, initialSales, initialCustomers, initialSuppliers, initialSettings, initialEmployees } from '../utils/mockData';
 
 interface AppContextType {
   theme: 'light' | 'dark';
   toggleTheme: () => void;
+  currentUser: User | null;
+  setCurrentUser: React.Dispatch<React.SetStateAction<User | null>>;
   products: Product[];
   setProducts: React.Dispatch<React.SetStateAction<Product[]>>;
   sales: Sale[];
@@ -22,6 +24,10 @@ interface AppContextType {
   setAttendance: React.Dispatch<React.SetStateAction<AttendanceRecord[]>>;
   dayCloseRecords: DayCloseRecord[];
   setDayCloseRecords: React.Dispatch<React.SetStateAction<DayCloseRecord[]>>;
+  expenses: Expense[];
+  setExpenses: React.Dispatch<React.SetStateAction<Expense[]>>;
+  returns: ReturnRecord[];
+  setReturns: React.Dispatch<React.SetStateAction<ReturnRecord[]>>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -30,6 +36,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     const saved = localStorage.getItem('theme');
     return (saved as 'light' | 'dark') || 'light';
+  });
+
+  const [currentUser, setCurrentUser] = useState<User | null>(() => {
+    const saved = localStorage.getItem('currentUser');
+    return saved ? JSON.parse(saved) : null;
   });
 
   const [products, setProducts] = useState<Product[]>(() => {
@@ -77,6 +88,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return saved ? JSON.parse(saved) : [];
   });
 
+  const [expenses, setExpenses] = useState<Expense[]>(() => {
+    const saved = localStorage.getItem('expenses');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  const [returns, setReturns] = useState<ReturnRecord[]>(() => {
+    const saved = localStorage.getItem('returns');
+    return saved ? JSON.parse(saved) : [];
+  });
+
   useEffect(() => {
     localStorage.setItem('theme', theme);
     if (theme === 'dark') {
@@ -85,6 +106,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       document.documentElement.classList.remove('dark');
     }
   }, [theme]);
+
+  useEffect(() => {
+    if (currentUser) {
+      localStorage.setItem('currentUser', JSON.stringify(currentUser));
+    } else {
+      localStorage.removeItem('currentUser');
+    }
+  }, [currentUser]);
 
   useEffect(() => {
     localStorage.setItem('products', JSON.stringify(products));
@@ -122,11 +151,20 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     localStorage.setItem('dayCloseRecords', JSON.stringify(dayCloseRecords));
   }, [dayCloseRecords]);
 
+  useEffect(() => {
+    localStorage.setItem('expenses', JSON.stringify(expenses));
+  }, [expenses]);
+
+  useEffect(() => {
+    localStorage.setItem('returns', JSON.stringify(returns));
+  }, [returns]);
+
   const toggleTheme = () => setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
 
   return (
     <AppContext.Provider value={{ 
       theme, toggleTheme, 
+      currentUser, setCurrentUser,
       products, setProducts, 
       sales, setSales, 
       customers, setCustomers, 
@@ -135,7 +173,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       heldSales, setHeldSales,
       employees, setEmployees,
       attendance, setAttendance,
-      dayCloseRecords, setDayCloseRecords
+      dayCloseRecords, setDayCloseRecords,
+      expenses, setExpenses,
+      returns, setReturns
     }}>
       {children}
     </AppContext.Provider>

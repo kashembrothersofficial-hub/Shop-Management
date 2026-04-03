@@ -1,27 +1,49 @@
 import React, { useState, useMemo } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { Calendar, DollarSign, TrendingUp, Package } from 'lucide-react';
+import { Calendar, DollarSign, TrendingUp, Package, Wallet } from 'lucide-react';
+import { format, isToday, isThisWeek, isThisMonth } from 'date-fns';
 
 export const Reports: React.FC = () => {
-  const { sales, products, dayCloseRecords, setDayCloseRecords } = useAppContext();
+  const { sales, products, dayCloseRecords, setDayCloseRecords, expenses } = useAppContext();
   const [activeTab, setActiveTab] = useState<'profit' | 'best-sellers' | 'day-close'>('profit');
   const [dayCloseNote, setDayCloseNote] = useState('');
+  const [dateFilter, setDateFilter] = useState<'today' | 'week' | 'month' | 'all'>('all');
+
+  const filterByDate = (dateString: string) => {
+    const date = new Date(dateString);
+    switch (dateFilter) {
+      case 'today': return isToday(date);
+      case 'week': return isThisWeek(date);
+      case 'month': return isThisMonth(date);
+      case 'all': return true;
+      default: return true;
+    }
+  };
+
+  const filteredSales = useMemo(() => sales.filter(s => filterByDate(s.date)), [sales, dateFilter]);
+  const filteredExpenses = useMemo(() => expenses.filter(e => filterByDate(e.date)), [expenses, dateFilter]);
 
   // Profit Calculation
-  const totalProfit = useMemo(() => {
-    return sales.reduce((sum, sale) => sum + (sale.profit || 0), 0);
-  }, [sales]);
+  const grossProfit = useMemo(() => {
+    return filteredSales.reduce((sum, sale) => sum + (sale.profit || 0), 0);
+  }, [filteredSales]);
 
   const totalSalesAmount = useMemo(() => {
-    return sales.reduce((sum, sale) => sum + sale.finalTotal, 0);
-  }, [sales]);
+    return filteredSales.reduce((sum, sale) => sum + sale.finalTotal, 0);
+  }, [filteredSales]);
+
+  const totalExpensesAmount = useMemo(() => {
+    return filteredExpenses.reduce((sum, e) => sum + e.amount, 0);
+  }, [filteredExpenses]);
+
+  const netProfit = grossProfit - totalExpensesAmount;
 
   // Best Sellers
   const bestSellers = useMemo(() => {
     const productSales: Record<string, { name: string; quantity: number; revenue: number }> = {};
     
-    sales.forEach(sale => {
+    filteredSales.forEach(sale => {
       sale.items.forEach(item => {
         if (!productSales[item.productId || item.name]) {
           productSales[item.productId || item.name] = { name: item.name, quantity: 0, revenue: 0 };
@@ -34,7 +56,7 @@ export const Reports: React.FC = () => {
     return Object.values(productSales)
       .sort((a, b) => b.quantity - a.quantity)
       .slice(0, 10);
-  }, [sales]);
+  }, [filteredSales]);
 
   // Day Close
   const today = new Date().toISOString().split('T')[0];
@@ -71,7 +93,19 @@ export const Reports: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-800 dark:text-white">রিপোর্ট ও অ্যানালিটিক্স</h1>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <h1 className="text-2xl font-bold text-gray-800 dark:text-white">রিপোর্ট ও অ্যানালিটিক্স</h1>
+        <select
+          value={dateFilter}
+          onChange={(e) => setDateFilter(e.target.value as any)}
+          className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 outline-none"
+        >
+          <option value="today">আজ</option>
+          <option value="week">এই সপ্তাহ</option>
+          <option value="month">এই মাস</option>
+          <option value="all">সব সময়</option>
+        </select>
+      </div>
 
       {/* Tabs */}
       <div className="flex space-x-2 border-b border-gray-200 dark:border-gray-700 pb-2 overflow-x-auto whitespace-nowrap">
@@ -113,17 +147,7 @@ export const Reports: React.FC = () => {
         {/* Profit Report */}
         {activeTab === 'profit' && (
           <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-green-50 dark:bg-green-900/20 p-6 rounded-xl border border-green-100 dark:border-green-800">
-                <div className="flex items-center space-x-3 mb-2">
-                  <div className="p-2 bg-green-100 dark:bg-green-800 rounded-lg text-green-600 dark:text-green-300">
-                    <TrendingUp size={24} />
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">মোট লাভ</h3>
-                </div>
-                <p className="text-3xl font-bold text-green-600 dark:text-green-400">৳ {totalProfit.toLocaleString()}</p>
-              </div>
-              
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="bg-blue-50 dark:bg-blue-900/20 p-6 rounded-xl border border-blue-100 dark:border-blue-800">
                 <div className="flex items-center space-x-3 mb-2">
                   <div className="p-2 bg-blue-100 dark:bg-blue-800 rounded-lg text-blue-600 dark:text-blue-300">
@@ -133,9 +157,29 @@ export const Reports: React.FC = () => {
                 </div>
                 <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">৳ {totalSalesAmount.toLocaleString()}</p>
               </div>
+
+              <div className="bg-red-50 dark:bg-red-900/20 p-6 rounded-xl border border-red-100 dark:border-red-800">
+                <div className="flex items-center space-x-3 mb-2">
+                  <div className="p-2 bg-red-100 dark:bg-red-800 rounded-lg text-red-600 dark:text-red-300">
+                    <Wallet size={24} />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">মোট খরচ</h3>
+                </div>
+                <p className="text-3xl font-bold text-red-600 dark:text-red-400">৳ {totalExpensesAmount.toLocaleString()}</p>
+              </div>
+
+              <div className="bg-green-50 dark:bg-green-900/20 p-6 rounded-xl border border-green-100 dark:border-green-800">
+                <div className="flex items-center space-x-3 mb-2">
+                  <div className="p-2 bg-green-100 dark:bg-green-800 rounded-lg text-green-600 dark:text-green-300">
+                    <TrendingUp size={24} />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">প্রকৃত লাভ (Net Profit)</h3>
+                </div>
+                <p className="text-3xl font-bold text-green-600 dark:text-green-400">৳ {netProfit.toLocaleString()}</p>
+              </div>
             </div>
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              * লাভ হিসাব করা হয়েছে: (বিক্রয় মূল্য - ক্রয় মূল্য) × পরিমাণ
+              * প্রকৃত লাভ = (মোট বিক্রয় থেকে প্রাপ্ত লাভ) - (মোট খরচ)
             </p>
           </div>
         )}

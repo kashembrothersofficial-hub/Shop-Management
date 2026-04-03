@@ -1,3 +1,29 @@
+export type UserRole = 'admin' | 'cashier';
+
+export interface User {
+  id: string;
+  name: string;
+  role: UserRole;
+  pin: string;
+}
+
+export interface Expense {
+  id: string;
+  reason: string;
+  amount: number;
+  date: string;
+}
+
+export interface ReturnRecord {
+  id: string;
+  productId: string;
+  productName: string;
+  quantity: number;
+  type: 'return' | 'damage';
+  date: string;
+  note: string;
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -45,6 +71,8 @@ export interface Employee {
   name: string;
   phone: string;
   joinDate: string;
+  baseSalary: number;
+  advancePayment: number;
 }
 
 export interface AttendanceRecord {
@@ -141,6 +169,6 @@ export const initialSales: Sale[] = [
 ];
 
 export const initialEmployees: Employee[] = [
-  { id: 'emp1', name: 'শফিক ইসলাম', phone: '01900000001', joinDate: new Date().toISOString() },
-  { id: 'emp2', name: 'আরিফ হোসেন', phone: '01900000002', joinDate: new Date().toISOString() },
+  { id: 'emp1', name: 'শফিক ইসলাম', phone: '01900000001', joinDate: new Date().toISOString(), baseSalary: 15000, advancePayment: 0 },
+  { id: 'emp2', name: 'আরিফ হোসেন', phone: '01900000002', joinDate: new Date().toISOString(), baseSalary: 12000, advancePayment: 2000 },
 ];

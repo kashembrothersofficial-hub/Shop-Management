@@ -1,15 +1,30 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useAppContext } from '../context/AppContext';
-import { TrendingUp, Users, Truck, Package, AlertTriangle, Clock } from 'lucide-react';
-import { format } from 'date-fns';
+import { TrendingUp, Users, Truck, Package, AlertTriangle, Clock, Wallet, DollarSign } from 'lucide-react';
+import { format, isToday, isThisWeek, isThisMonth } from 'date-fns';
 
 export const Dashboard: React.FC = () => {
-  const { sales, customers, suppliers, products, settings } = useAppContext();
+  const { sales, customers, suppliers, products, settings, expenses } = useAppContext();
+  const [dateFilter, setDateFilter] = useState<'today' | 'week' | 'month' | 'all'>('today');
 
-  const today = new Date().toISOString().split('T')[0];
-  const todaysSales = sales
-    .filter(s => s.date.startsWith(today))
-    .reduce((sum, s) => sum + s.totalAmount, 0);
+  const filterByDate = (dateString: string) => {
+    const date = new Date(dateString);
+    switch (dateFilter) {
+      case 'today': return isToday(date);
+      case 'week': return isThisWeek(date);
+      case 'month': return isThisMonth(date);
+      case 'all': return true;
+      default: return true;
+    }
+  };
+
+  const filteredSales = sales.filter(s => filterByDate(s.date));
+  const filteredExpenses = expenses.filter(e => filterByDate(e.date));
+
+  const totalSalesAmount = filteredSales.reduce((sum, s) => sum + s.totalAmount, 0);
+  const grossProfit = filteredSales.reduce((sum, s) => sum + s.profit, 0);
+  const totalExpensesAmount = filteredExpenses.reduce((sum, e) => sum + e.amount, 0);
+  const netProfit = grossProfit - totalExpensesAmount;
 
   const totalCustomerDues = customers.reduce((sum, c) => sum + c.totalDue, 0);
   const totalSupplierDues = suppliers.reduce((sum, s) => sum + s.totalDue, 0);
@@ -32,16 +47,49 @@ export const Dashboard: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">ড্যাশবোর্ড</h1>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">ড্যাশবোর্ড</h1>
+        <select
+          value={dateFilter}
+          onChange={(e) => setDateFilter(e.target.value as any)}
+          className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 outline-none"
+        >
+          <option value="today">আজ</option>
+          <option value="week">এই সপ্তাহ</option>
+          <option value="month">এই মাস</option>
+          <option value="all">সব সময়</option>
+        </select>
+      </div>
       
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard 
-          title="আজকের সেলস" 
-          value={`${settings.currencySymbol}${todaysSales}`} 
+          title="মোট সেলস" 
+          value={`${settings.currencySymbol}${totalSalesAmount}`} 
           icon={<TrendingUp size={24} className="text-blue-600 dark:text-blue-400" />} 
           colorClass="bg-blue-50 dark:bg-blue-900/30"
         />
+        <StatCard 
+          title="প্রকৃত লাভ (Net Profit)" 
+          value={`${settings.currencySymbol}${netProfit}`} 
+          icon={<DollarSign size={24} className="text-green-600 dark:text-green-400" />} 
+          colorClass="bg-green-50 dark:bg-green-900/30"
+        />
+        <StatCard 
+          title="মোট খরচ" 
+          value={`${settings.currencySymbol}${totalExpensesAmount}`} 
+          icon={<Wallet size={24} className="text-red-600 dark:text-red-400" />} 
+          colorClass="bg-red-50 dark:bg-red-900/30"
+        />
+        <StatCard 
+          title="মোট প্রোডাক্ট" 
+          value={totalProducts} 
+          icon={<Package size={24} className="text-purple-600 dark:text-purple-400" />} 
+          colorClass="bg-purple-50 dark:bg-purple-900/30"
+        />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <StatCard 
           title="মোট কাস্টমার বকেয়া" 
           value={`${settings.currencySymbol}${totalCustomerDues}`} 
@@ -53,12 +101,6 @@ export const Dashboard: React.FC = () => {
           value={`${settings.currencySymbol}${totalSupplierDues}`} 
           icon={<Truck size={24} className="text-red-600 dark:text-red-400" />} 
           colorClass="bg-red-50 dark:bg-red-900/30"
-        />
-        <StatCard 
-          title="মোট প্রোডাক্ট" 
-          value={totalProducts} 
-          icon={<Package size={24} className="text-green-600 dark:text-green-400" />} 
-          colorClass="bg-green-50 dark:bg-green-900/30"
         />
       </div>
 
