@@ -4,6 +4,7 @@ import { CartItem, Product, Sale, HeldSale, Quotation } from '../utils/mockData'
 import { extractBillData, ExtractedItem } from '../services/gemini';
 import { Camera, Search, Plus, Trash2, CheckCircle, Loader2, ShoppingCart, PauseCircle, PlayCircle, Printer, Share2, X, FileText, Gift } from 'lucide-react';
 import { format } from 'date-fns';
+import { motion, AnimatePresence } from 'motion/react';
 
 export const POS: React.FC = () => {
   const { products, setProducts, sales, setSales, customers, setCustomers, settings, heldSales, setHeldSales, quotations, setQuotations } = useAppContext();
@@ -592,277 +593,329 @@ export const POS: React.FC = () => {
       )}
 
       {/* Held Sales Modal */}
-      {showHeldSales && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]">
-            <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">হোল্ড সেলস</h2>
-              <button onClick={() => setShowHeldSales(false)} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
-                <X size={24} />
-              </button>
-            </div>
-            <div className="p-4 overflow-y-auto space-y-3">
-              {heldSales.length === 0 ? (
-                <p className="text-center text-gray-500 dark:text-gray-400 py-4">কোনো হোল্ড সেল নেই</p>
-              ) : (
-                heldSales.map(hs => (
-                  <div key={hs.id} className="p-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-700/50 flex justify-between items-center">
-                    <div>
-                      <p className="font-bold text-gray-900 dark:text-gray-100">{hs.note}</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">{format(new Date(hs.date), 'dd/MM/yyyy hh:mm a')}</p>
-                      <p className="text-sm text-gray-600 dark:text-gray-300">{hs.items.length} টি আইটেম</p>
+      <AnimatePresence>
+        {showHeldSales && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+          >
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              transition={{ type: "spring", duration: 0.3 }}
+              className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]"
+            >
+              <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+                <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">হোল্ড সেলস</h2>
+                <button onClick={() => setShowHeldSales(false)} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                  <X size={24} />
+                </button>
+              </div>
+              <div className="p-4 overflow-y-auto space-y-3">
+                {heldSales.length === 0 ? (
+                  <p className="text-center text-gray-500 dark:text-gray-400 py-4">কোনো হোল্ড সেল নেই</p>
+                ) : (
+                  heldSales.map(hs => (
+                    <div key={hs.id} className="p-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-700/50 flex justify-between items-center">
+                      <div>
+                        <p className="font-bold text-gray-900 dark:text-gray-100">{hs.note}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">{format(new Date(hs.date), 'dd/MM/yyyy hh:mm a')}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-300">{hs.items.length} টি আইটেম</p>
+                      </div>
+                      <div className="flex gap-2">
+                        <button onClick={() => restoreHeldSale(hs)} className="p-2 bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/50 dark:text-blue-300 rounded-lg">
+                          <PlayCircle size={20} />
+                        </button>
+                        <button onClick={() => setHeldSales(heldSales.filter(h => h.id !== hs.id))} className="p-2 bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/50 dark:text-red-300 rounded-lg">
+                          <Trash2 size={20} />
+                        </button>
+                      </div>
                     </div>
-                    <div className="flex gap-2">
-                      <button onClick={() => restoreHeldSale(hs)} className="p-2 bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/50 dark:text-blue-300 rounded-lg">
-                        <PlayCircle size={20} />
-                      </button>
-                      <button onClick={() => setHeldSales(heldSales.filter(h => h.id !== hs.id))} className="p-2 bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/50 dark:text-red-300 rounded-lg">
-                        <Trash2 size={20} />
-                      </button>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+                  ))
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Quotations Modal */}
-      {showQuotations && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]">
-            <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">সংরক্ষিত কোটেশন</h2>
-              <button onClick={() => setShowQuotations(false)} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
-                <X size={24} />
-              </button>
-            </div>
-            <div className="p-4 overflow-y-auto space-y-3">
-              {quotations.length === 0 ? (
-                <p className="text-center text-gray-500 dark:text-gray-400 py-4">কোনো কোটেশন নেই</p>
-              ) : (
-                quotations.map(q => (
-                  <div key={q.id} className="p-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-700/50 flex justify-between items-center">
-                    <div>
-                      <p className="font-bold text-gray-900 dark:text-gray-100">{q.customerName}</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">{format(new Date(q.date), 'dd/MM/yyyy hh:mm a')}</p>
-                      <p className="text-sm text-indigo-600 dark:text-indigo-400 font-bold">৳{q.finalTotal}</p>
+      <AnimatePresence>
+        {showQuotations && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+          >
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              transition={{ type: "spring", duration: 0.3 }}
+              className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]"
+            >
+              <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+                <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">সংরক্ষিত কোটেশন</h2>
+                <button onClick={() => setShowQuotations(false)} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                  <X size={24} />
+                </button>
+              </div>
+              <div className="p-4 overflow-y-auto space-y-3">
+                {quotations.length === 0 ? (
+                  <p className="text-center text-gray-500 dark:text-gray-400 py-4">কোনো কোটেশন নেই</p>
+                ) : (
+                  quotations.map(q => (
+                    <div key={q.id} className="p-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-700/50 flex justify-between items-center">
+                      <div>
+                        <p className="font-bold text-gray-900 dark:text-gray-100">{q.customerName}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">{format(new Date(q.date), 'dd/MM/yyyy hh:mm a')}</p>
+                        <p className="text-sm text-indigo-600 dark:text-indigo-400 font-bold">৳{q.finalTotal}</p>
+                      </div>
+                      <div className="flex gap-2">
+                        <button onClick={() => setCompletedQuotation(q)} className="p-2 bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-200 rounded-lg" title="প্রিন্ট">
+                          <Printer size={20} />
+                        </button>
+                        <button onClick={() => restoreQuotation(q)} className="p-2 bg-indigo-100 text-indigo-700 hover:bg-indigo-200 dark:bg-indigo-900/50 dark:text-indigo-300 rounded-lg" title="সেলে রূপান্তর">
+                          <ShoppingCart size={20} />
+                        </button>
+                        <button onClick={() => setQuotations(quotations.filter(x => x.id !== q.id))} className="p-2 bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/50 dark:text-red-300 rounded-lg">
+                          <Trash2 size={20} />
+                        </button>
+                      </div>
                     </div>
-                    <div className="flex gap-2">
-                      <button onClick={() => setCompletedQuotation(q)} className="p-2 bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-200 rounded-lg" title="প্রিন্ট">
-                        <Printer size={20} />
-                      </button>
-                      <button onClick={() => restoreQuotation(q)} className="p-2 bg-indigo-100 text-indigo-700 hover:bg-indigo-200 dark:bg-indigo-900/50 dark:text-indigo-300 rounded-lg" title="সেলে রূপান্তর">
-                        <ShoppingCart size={20} />
-                      </button>
-                      <button onClick={() => setQuotations(quotations.filter(x => x.id !== q.id))} className="p-2 bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/50 dark:text-red-300 rounded-lg">
-                        <Trash2 size={20} />
-                      </button>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+                  ))
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Receipt Modal */}
-      {completedSale && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]">
-            <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
-              <div className="flex items-center text-green-600 dark:text-green-400">
-                <CheckCircle className="mr-2" size={24} />
-                <h2 className="text-xl font-bold">বিক্রয় সফল!</h2>
+      <AnimatePresence>
+        {completedSale && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+          >
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              transition={{ type: "spring", duration: 0.3 }}
+              className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]"
+            >
+              <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+                <div className="flex items-center text-green-600 dark:text-green-400">
+                  <CheckCircle className="mr-2" size={24} />
+                  <h2 className="text-xl font-bold">বিক্রয় সফল!</h2>
+                </div>
+                <button onClick={() => setCompletedSale(null)} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                  <X size={24} />
+                </button>
               </div>
-              <button onClick={() => setCompletedSale(null)} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
-                <X size={24} />
-              </button>
-            </div>
-            
-            <div id="receipt-content" className="p-6 overflow-y-auto bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
-              <div className="text-center mb-6 border-b border-dashed border-gray-300 dark:border-gray-600 pb-4">
-                <h3 className="text-2xl font-bold mb-1">{settings.shopName}</h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400">{settings.address}</p>
-                <p className="text-sm text-gray-500 dark:text-gray-400">ফোন: {settings.phone}</p>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">তারিখ: {format(new Date(completedSale.date), 'dd/MM/yyyy hh:mm a')}</p>
-                <p className="text-sm text-gray-500 dark:text-gray-400 font-mono mt-1">ইনভয়েস: {completedSale.id}</p>
-              </div>
+              
+              <div id="receipt-content" className="p-6 overflow-y-auto bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
+                <div className="text-center mb-6 border-b border-dashed border-gray-300 dark:border-gray-600 pb-4">
+                  <h3 className="text-2xl font-bold mb-1">{settings.shopName}</h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{settings.address}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">ফোন: {settings.phone}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">তারিখ: {format(new Date(completedSale.date), 'dd/MM/yyyy hh:mm a')}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 font-mono mt-1">ইনভয়েস: {completedSale.id}</p>
+                </div>
 
-              <div className="mb-4">
-                <p><span className="font-medium">ক্রেতার নাম:</span> {completedSale.customerName}</p>
-              </div>
+                <div className="mb-4">
+                  <p><span className="font-medium">ক্রেতার নাম:</span> {completedSale.customerName}</p>
+                </div>
 
-              <table className="w-full mb-6 text-sm">
-                <thead>
-                  <tr className="border-b border-gray-200 dark:border-gray-700">
-                    <th className="text-left py-2">বিবরণ</th>
-                    <th className="text-center py-2">পরিমাণ</th>
-                    <th className="text-right py-2">দর</th>
-                    <th className="text-right py-2">মোট</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
-                  {completedSale.items.map((item, idx) => (
-                    <tr key={idx}>
-                      <td className="py-2">{item.name}</td>
-                      <td className="text-center py-2">{item.quantity}</td>
-                      <td className="text-right py-2">৳{item.price}</td>
-                      <td className="text-right py-2 font-medium">৳{item.total}</td>
+                <table className="w-full mb-6 text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-200 dark:border-gray-700">
+                      <th className="text-left py-2">বিবরণ</th>
+                      <th className="text-center py-2">পরিমাণ</th>
+                      <th className="text-right py-2">দর</th>
+                      <th className="text-right py-2">মোট</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
+                    {completedSale.items.map((item, idx) => (
+                      <tr key={idx}>
+                        <td className="py-2">{item.name}</td>
+                        <td className="text-center py-2">{item.quantity}</td>
+                        <td className="text-right py-2">৳{item.price}</td>
+                        <td className="text-right py-2 font-medium">৳{item.total}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
 
-              <div className="space-y-2 border-t border-gray-200 dark:border-gray-700 pt-4">
-                <div className="flex justify-between text-gray-600 dark:text-gray-400">
-                  <span>মোট:</span>
-                  <span>৳{completedSale.totalAmount}</span>
-                </div>
-                {completedSale.discount > 0 && (
+                <div className="space-y-2 border-t border-gray-200 dark:border-gray-700 pt-4">
                   <div className="flex justify-between text-gray-600 dark:text-gray-400">
-                    <span>ডিসকাউন্ট:</span>
-                    <span>-৳{completedSale.discount}</span>
+                    <span>মোট:</span>
+                    <span>৳{completedSale.totalAmount}</span>
                   </div>
-                )}
-                {completedSale.vat > 0 && (
-                  <div className="flex justify-between text-gray-600 dark:text-gray-400">
-                    <span>ভ্যাট:</span>
-                    <span>+৳{completedSale.vat}</span>
+                  {completedSale.discount > 0 && (
+                    <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                      <span>ডিসকাউন্ট:</span>
+                      <span>-৳{completedSale.discount}</span>
+                    </div>
+                  )}
+                  {completedSale.vat > 0 && (
+                    <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                      <span>ভ্যাট:</span>
+                      <span>+৳{completedSale.vat}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between font-bold text-lg pt-2 border-t border-gray-200 dark:border-gray-700">
+                    <span>সর্বমোট:</span>
+                    <span>৳{completedSale.finalTotal}</span>
                   </div>
-                )}
-                <div className="flex justify-between font-bold text-lg pt-2 border-t border-gray-200 dark:border-gray-700">
-                  <span>সর্বমোট:</span>
-                  <span>৳{completedSale.finalTotal}</span>
+                  <div className="flex justify-between text-gray-600 dark:text-gray-400 pt-2">
+                    <span>প্রদত্ত:</span>
+                    <span>৳{completedSale.paidAmount}</span>
+                  </div>
+                  {completedSale.dueAmount > 0 && (
+                    <div className="flex justify-between text-red-600 dark:text-red-400 font-medium">
+                      <span>বকেয়া:</span>
+                      <span>৳{completedSale.dueAmount}</span>
+                    </div>
+                  )}
                 </div>
-                <div className="flex justify-between text-gray-600 dark:text-gray-400 pt-2">
-                  <span>প্রদত্ত:</span>
-                  <span>৳{completedSale.paidAmount}</span>
+
+                <div className="mt-8 text-center text-sm text-gray-500 dark:text-gray-400">
+                  <p>আমাদের সাথে কেনাকাটা করার জন্য ধন্যবাদ!</p>
                 </div>
-                {completedSale.dueAmount > 0 && (
-                  <div className="flex justify-between text-red-600 dark:text-red-400 font-medium">
-                    <span>বকেয়া:</span>
-                    <span>৳{completedSale.dueAmount}</span>
-                  </div>
-                )}
               </div>
 
-              <div className="mt-8 text-center text-sm text-gray-500 dark:text-gray-400">
-                <p>আমাদের সাথে কেনাকাটা করার জন্য ধন্যবাদ!</p>
+              <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 flex justify-end gap-3">
+                <button
+                  onClick={() => shareOnWhatsApp(completedSale)}
+                  className="flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors"
+                >
+                  <Share2 size={18} className="mr-2" />
+                  WhatsApp-এ পাঠান
+                </button>
+                <button
+                  onClick={() => window.print()}
+                  className="flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+                >
+                  <Printer size={18} className="mr-2" />
+                  প্রিন্ট করুন
+                </button>
               </div>
-            </div>
-
-            <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 flex justify-end gap-3">
-              <button
-                onClick={() => shareOnWhatsApp(completedSale)}
-                className="flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors"
-              >
-                <Share2 size={18} className="mr-2" />
-                WhatsApp-এ পাঠান
-              </button>
-              <button
-                onClick={() => window.print()}
-                className="flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
-              >
-                <Printer size={18} className="mr-2" />
-                প্রিন্ট করুন
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Quotation Print Modal */}
-      {completedQuotation && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]">
-            <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
-              <div className="flex items-center text-indigo-600 dark:text-indigo-400">
-                <FileText className="mr-2" size={24} />
-                <h2 className="text-xl font-bold">কোটেশন / এস্টিমেট</h2>
+      <AnimatePresence>
+        {completedQuotation && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+          >
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              transition={{ type: "spring", duration: 0.3 }}
+              className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]"
+            >
+              <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+                <div className="flex items-center text-indigo-600 dark:text-indigo-400">
+                  <FileText className="mr-2" size={24} />
+                  <h2 className="text-xl font-bold">কোটেশন / এস্টিমেট</h2>
+                </div>
+                <button onClick={() => setCompletedQuotation(null)} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                  <X size={24} />
+                </button>
               </div>
-              <button onClick={() => setCompletedQuotation(null)} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
-                <X size={24} />
-              </button>
-            </div>
-            
-            <div id="quotation-content" className="p-6 overflow-y-auto bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
-              <div className="text-center mb-6 border-b border-dashed border-gray-300 dark:border-gray-600 pb-4">
-                <h3 className="text-2xl font-bold mb-1">{settings.shopName}</h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400">{settings.address}</p>
-                <p className="text-sm text-gray-500 dark:text-gray-400">ফোন: {settings.phone}</p>
-                <p className="text-sm font-bold mt-2 border border-gray-300 dark:border-gray-600 inline-block px-3 py-1 rounded">ESTIMATE / QUOTATION</p>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">তারিখ: {format(new Date(completedQuotation.date), 'dd/MM/yyyy hh:mm a')}</p>
-                <p className="text-sm text-gray-500 dark:text-gray-400 font-mono mt-1">কোটেশন নং: {completedQuotation.id}</p>
-              </div>
+              
+              <div id="quotation-content" className="p-6 overflow-y-auto bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
+                <div className="text-center mb-6 border-b border-dashed border-gray-300 dark:border-gray-600 pb-4">
+                  <h3 className="text-2xl font-bold mb-1">{settings.shopName}</h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{settings.address}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">ফোন: {settings.phone}</p>
+                  <p className="text-sm font-bold mt-2 border border-gray-300 dark:border-gray-600 inline-block px-3 py-1 rounded">ESTIMATE / QUOTATION</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">তারিখ: {format(new Date(completedQuotation.date), 'dd/MM/yyyy hh:mm a')}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 font-mono mt-1">কোটেশন নং: {completedQuotation.id}</p>
+                </div>
 
-              <div className="mb-4">
-                <p><span className="font-medium">ক্রেতার নাম:</span> {completedQuotation.customerName}</p>
-              </div>
+                <div className="mb-4">
+                  <p><span className="font-medium">ক্রেতার নাম:</span> {completedQuotation.customerName}</p>
+                </div>
 
-              <table className="w-full mb-6 text-sm">
-                <thead>
-                  <tr className="border-b border-gray-200 dark:border-gray-700">
-                    <th className="text-left py-2">বিবরণ</th>
-                    <th className="text-center py-2">পরিমাণ</th>
-                    <th className="text-right py-2">দর</th>
-                    <th className="text-right py-2">মোট</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
-                  {completedQuotation.items.map((item, idx) => (
-                    <tr key={idx}>
-                      <td className="py-2">{item.name}</td>
-                      <td className="text-center py-2">{item.quantity}</td>
-                      <td className="text-right py-2">৳{item.price}</td>
-                      <td className="text-right py-2 font-medium">৳{item.total}</td>
+                <table className="w-full mb-6 text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-200 dark:border-gray-700">
+                      <th className="text-left py-2">বিবরণ</th>
+                      <th className="text-center py-2">পরিমাণ</th>
+                      <th className="text-right py-2">দর</th>
+                      <th className="text-right py-2">মোট</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
+                    {completedQuotation.items.map((item, idx) => (
+                      <tr key={idx}>
+                        <td className="py-2">{item.name}</td>
+                        <td className="text-center py-2">{item.quantity}</td>
+                        <td className="text-right py-2">৳{item.price}</td>
+                        <td className="text-right py-2 font-medium">৳{item.total}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
 
-              <div className="space-y-2 border-t border-gray-200 dark:border-gray-700 pt-4">
-                <div className="flex justify-between text-gray-600 dark:text-gray-400">
-                  <span>মোট:</span>
-                  <span>৳{completedQuotation.totalAmount}</span>
+                <div className="space-y-2 border-t border-gray-200 dark:border-gray-700 pt-4">
+                  <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                    <span>মোট:</span>
+                    <span>৳{completedQuotation.totalAmount}</span>
+                  </div>
+                  {completedQuotation.discount > 0 && (
+                    <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                      <span>ডিসকাউন্ট:</span>
+                      <span>-৳{completedQuotation.discount}</span>
+                    </div>
+                  )}
+                  {completedQuotation.vat > 0 && (
+                    <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                      <span>ভ্যাট:</span>
+                      <span>+৳{completedQuotation.vat}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between font-bold text-lg pt-2 border-t border-gray-200 dark:border-gray-700">
+                    <span>সর্বমোট এস্টিমেট:</span>
+                    <span>৳{completedQuotation.finalTotal}</span>
+                  </div>
                 </div>
-                {completedQuotation.discount > 0 && (
-                  <div className="flex justify-between text-gray-600 dark:text-gray-400">
-                    <span>ডিসকাউন্ট:</span>
-                    <span>-৳{completedQuotation.discount}</span>
-                  </div>
-                )}
-                {completedQuotation.vat > 0 && (
-                  <div className="flex justify-between text-gray-600 dark:text-gray-400">
-                    <span>ভ্যাট:</span>
-                    <span>+৳{completedQuotation.vat}</span>
-                  </div>
-                )}
-                <div className="flex justify-between font-bold text-lg pt-2 border-t border-gray-200 dark:border-gray-700">
-                  <span>সর্বমোট এস্টিমেট:</span>
-                  <span>৳{completedQuotation.finalTotal}</span>
+
+                <div className="mt-8 text-center text-sm text-gray-500 dark:text-gray-400">
+                  <p>এটি একটি এস্টিমেট মাত্র, কোনো ক্যাশ মেমো নয়।</p>
                 </div>
               </div>
 
-              <div className="mt-8 text-center text-sm text-gray-500 dark:text-gray-400">
-                <p>এটি একটি এস্টিমেট মাত্র, কোনো ক্যাশ মেমো নয়।</p>
+              <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 flex justify-end gap-3">
+                <button
+                  onClick={() => window.print()}
+                  className="flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors"
+                >
+                  <Printer size={18} className="mr-2" />
+                  প্রিন্ট করুন
+                </button>
               </div>
-            </div>
-
-            <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 flex justify-end gap-3">
-              <button
-                onClick={() => window.print()}
-                className="flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors"
-              >
-                <Printer size={18} className="mr-2" />
-                প্রিন্ট করুন
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

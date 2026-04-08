@@ -4,6 +4,7 @@ import { Customer, PaymentRecord } from '../utils/mockData';
 import { downloadCSV } from '../utils/export';
 import { format } from 'date-fns';
 import { Search, DollarSign, History, X, Plus, Download } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 
 export const CustomerDues: React.FC = () => {
   const { customers, setCustomers } = useAppContext();
@@ -155,102 +156,128 @@ export const CustomerDues: React.FC = () => {
       </div>
 
       {/* Payment Modal */}
-      {isPaymentModalOpen && selectedCustomer && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-[95%] max-w-md overflow-hidden flex flex-col max-h-[90vh]">
-            <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">বকেয়া জমা</h2>
-              <button onClick={() => setIsPaymentModalOpen(false)} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
-                <X size={24} />
-              </button>
-            </div>
-            <form onSubmit={handleSavePayment} className="p-4 space-y-4">
-              <div className="bg-red-50 dark:bg-red-900/20 p-3 rounded-lg border border-red-100 dark:border-red-800/30 mb-4">
-                <p className="text-sm text-gray-600 dark:text-gray-400">ক্রেতা: <span className="font-bold text-gray-900 dark:text-gray-100">{selectedCustomer.name}</span></p>
-                <p className="text-sm text-gray-600 dark:text-gray-400">মোট বকেয়া: <span className="font-bold text-red-600 dark:text-red-400">৳{selectedCustomer.totalDue}</span></p>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">জমার পরিমাণ (৳)</label>
-                <input
-                  type="number"
-                  required
-                  min="1"
-                  max={selectedCustomer.totalDue}
-                  value={paymentAmount}
-                  onChange={e => setPaymentAmount(e.target.value ? Number(e.target.value) : '')}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 outline-none text-lg font-bold"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">নোট (ঐচ্ছিক)</label>
-                <input
-                  type="text"
-                  value={paymentNote}
-                  onChange={e => setPaymentNote(e.target.value)}
-                  placeholder="যেমন: নগদ প্রদান"
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 outline-none"
-                />
-              </div>
-              <div className="pt-4 flex justify-end gap-3">
-                <button
-                  type="button"
-                  onClick={() => setIsPaymentModalOpen(false)}
-                  className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg font-medium transition-colors"
-                >
-                  বাতিল
-                </button>
-                <button
-                  type="submit"
-                  disabled={!paymentAmount || Number(paymentAmount) <= 0}
-                  className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
-                >
-                  জমা করুন
+      <AnimatePresence>
+        {isPaymentModalOpen && selectedCustomer && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+          >
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              transition={{ type: "spring", duration: 0.3 }}
+              className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-[95%] max-w-md overflow-hidden flex flex-col max-h-[90vh]"
+            >
+              <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+                <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">বকেয়া জমা</h2>
+                <button onClick={() => setIsPaymentModalOpen(false)} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                  <X size={24} />
                 </button>
               </div>
-            </form>
-          </div>
-        </div>
-      )}
+              <form onSubmit={handleSavePayment} className="p-4 space-y-4">
+                <div className="bg-red-50 dark:bg-red-900/20 p-3 rounded-lg border border-red-100 dark:border-red-800/30 mb-4">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">ক্রেতা: <span className="font-bold text-gray-900 dark:text-gray-100">{selectedCustomer.name}</span></p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">মোট বকেয়া: <span className="font-bold text-red-600 dark:text-red-400">৳{selectedCustomer.totalDue}</span></p>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">জমার পরিমাণ (৳)</label>
+                  <input
+                    type="number"
+                    required
+                    min="1"
+                    max={selectedCustomer.totalDue}
+                    value={paymentAmount}
+                    onChange={e => setPaymentAmount(e.target.value ? Number(e.target.value) : '')}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 outline-none text-lg font-bold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">নোট (ঐচ্ছিক)</label>
+                  <input
+                    type="text"
+                    value={paymentNote}
+                    onChange={e => setPaymentNote(e.target.value)}
+                    placeholder="যেমন: নগদ প্রদান"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 outline-none"
+                  />
+                </div>
+                <div className="pt-4 flex justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setIsPaymentModalOpen(false)}
+                    className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg font-medium transition-colors"
+                  >
+                    বাতিল
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={!paymentAmount || Number(paymentAmount) <= 0}
+                    className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
+                  >
+                    জমা করুন
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* History Modal */}
-      {isHistoryModalOpen && selectedCustomer && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-[95%] max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
-            <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
-              <div>
-                <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">জমার ইতিহাস</h2>
-                <p className="text-sm text-gray-500 dark:text-gray-400">{selectedCustomer.name}</p>
+      <AnimatePresence>
+        {isHistoryModalOpen && selectedCustomer && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+          >
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              transition={{ type: "spring", duration: 0.3 }}
+              className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-[95%] max-w-lg overflow-hidden flex flex-col max-h-[90vh]"
+            >
+              <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">জমার ইতিহাস</h2>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{selectedCustomer.name}</p>
+                </div>
+                <button onClick={() => setIsHistoryModalOpen(false)} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                  <X size={24} />
+                </button>
               </div>
-              <button onClick={() => setIsHistoryModalOpen(false)} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
-                <X size={24} />
-              </button>
-            </div>
-            
-            <div className="flex-1 overflow-y-auto p-4">
-              {selectedCustomer.payments.length === 0 ? (
-                <div className="text-center py-10 text-gray-500 dark:text-gray-400">
-                  কোনো জমার রেকর্ড নেই
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {selectedCustomer.payments.map((payment) => (
-                    <div key={payment.id} className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
-                      <div>
-                        <p className="font-medium text-gray-900 dark:text-gray-100">{format(new Date(payment.date), 'dd MMM yyyy, hh:mm a')}</p>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">{payment.note}</p>
+              
+              <div className="flex-1 overflow-y-auto p-4">
+                {selectedCustomer.payments.length === 0 ? (
+                  <div className="text-center py-10 text-gray-500 dark:text-gray-400">
+                    কোনো জমার রেকর্ড নেই
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {selectedCustomer.payments.map((payment) => (
+                      <div key={payment.id} className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
+                        <div>
+                          <p className="font-medium text-gray-900 dark:text-gray-100">{format(new Date(payment.date), 'dd MMM yyyy, hh:mm a')}</p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">{payment.note}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-bold text-green-600 dark:text-green-400">+ ৳{payment.amount}</p>
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <p className="font-bold text-green-600 dark:text-green-400">+ ৳{payment.amount}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+                    ))}
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

@@ -4,6 +4,7 @@ import { Sale } from '../utils/mockData';
 import { downloadCSV } from '../utils/export';
 import { format } from 'date-fns';
 import { Search, Calendar, Eye, X, Receipt, Printer, Share2, Download } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 
 export const SalesHistory: React.FC = () => {
   const { sales, settings } = useAppContext();
@@ -135,110 +136,123 @@ export const SalesHistory: React.FC = () => {
       </div>
 
       {/* Receipt Modal */}
-      {selectedSale && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-[95%] max-w-md overflow-hidden flex flex-col max-h-[90vh]">
-            <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
-              <div className="flex items-center text-gray-900 dark:text-gray-100">
-                <Receipt className="mr-2" size={24} />
-                <h2 className="text-xl font-bold">ক্যাশ মেমো</h2>
+      <AnimatePresence>
+        {selectedSale && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+          >
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              transition={{ type: "spring", duration: 0.3 }}
+              className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-[95%] max-w-md overflow-hidden flex flex-col max-h-[90vh]"
+            >
+              <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+                <div className="flex items-center text-gray-900 dark:text-gray-100">
+                  <Receipt className="mr-2" size={24} />
+                  <h2 className="text-xl font-bold">ক্যাশ মেমো</h2>
+                </div>
+                <button onClick={() => setSelectedSale(null)} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                  <X size={24} />
+                </button>
               </div>
-              <button onClick={() => setSelectedSale(null)} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
-                <X size={24} />
-              </button>
-            </div>
-            
-            <div id="receipt-content" className="p-6 overflow-y-auto bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
-              <div className="text-center mb-6 border-b border-dashed border-gray-300 dark:border-gray-600 pb-4">
-                <h3 className="text-2xl font-bold mb-1">{settings.shopName}</h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400">{settings.address}</p>
-                <p className="text-sm text-gray-500 dark:text-gray-400">ফোন: {settings.phone}</p>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">তারিখ: {format(new Date(selectedSale.date), 'dd/MM/yyyy hh:mm a')}</p>
-                <p className="text-sm text-gray-500 dark:text-gray-400 font-mono mt-1">ইনভয়েস: {selectedSale.id}</p>
-              </div>
+              
+              <div id="receipt-content" className="p-6 overflow-y-auto bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
+                <div className="text-center mb-6 border-b border-dashed border-gray-300 dark:border-gray-600 pb-4">
+                  <h3 className="text-2xl font-bold mb-1">{settings.shopName}</h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{settings.address}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">ফোন: {settings.phone}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">তারিখ: {format(new Date(selectedSale.date), 'dd/MM/yyyy hh:mm a')}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 font-mono mt-1">ইনভয়েস: {selectedSale.id}</p>
+                </div>
 
-              <div className="mb-4">
-                <p><span className="font-medium">ক্রেতার নাম:</span> {selectedSale.customerName}</p>
-              </div>
+                <div className="mb-4">
+                  <p><span className="font-medium">ক্রেতার নাম:</span> {selectedSale.customerName}</p>
+                </div>
 
-              <table className="w-full mb-6 text-sm">
-                <thead>
-                  <tr className="border-b border-gray-200 dark:border-gray-700">
-                    <th className="text-left py-2">বিবরণ</th>
-                    <th className="text-center py-2">পরিমাণ</th>
-                    <th className="text-right py-2">দর</th>
-                    <th className="text-right py-2">মোট</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
-                  {selectedSale.items.map((item, idx) => (
-                    <tr key={idx}>
-                      <td className="py-2">{item.name}</td>
-                      <td className="text-center py-2">{item.quantity}</td>
-                      <td className="text-right py-2">৳{item.price}</td>
-                      <td className="text-right py-2 font-medium">৳{item.total}</td>
+                <table className="w-full mb-6 text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-200 dark:border-gray-700">
+                      <th className="text-left py-2">বিবরণ</th>
+                      <th className="text-center py-2">পরিমাণ</th>
+                      <th className="text-right py-2">দর</th>
+                      <th className="text-right py-2">মোট</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
+                    {selectedSale.items.map((item, idx) => (
+                      <tr key={idx}>
+                        <td className="py-2">{item.name}</td>
+                        <td className="text-center py-2">{item.quantity}</td>
+                        <td className="text-right py-2">৳{item.price}</td>
+                        <td className="text-right py-2 font-medium">৳{item.total}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
 
-              <div className="space-y-2 border-t border-gray-200 dark:border-gray-700 pt-4">
-                <div className="flex justify-between text-gray-600 dark:text-gray-400">
-                  <span>মোট:</span>
-                  <span>৳{selectedSale.totalAmount}</span>
-                </div>
-                {selectedSale.discount > 0 && (
+                <div className="space-y-2 border-t border-gray-200 dark:border-gray-700 pt-4">
                   <div className="flex justify-between text-gray-600 dark:text-gray-400">
-                    <span>ডিসকাউন্ট:</span>
-                    <span>-৳{selectedSale.discount}</span>
+                    <span>মোট:</span>
+                    <span>৳{selectedSale.totalAmount}</span>
                   </div>
-                )}
-                {selectedSale.vat > 0 && (
-                  <div className="flex justify-between text-gray-600 dark:text-gray-400">
-                    <span>ভ্যাট:</span>
-                    <span>+৳{selectedSale.vat}</span>
+                  {selectedSale.discount > 0 && (
+                    <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                      <span>ডিসকাউন্ট:</span>
+                      <span>-৳{selectedSale.discount}</span>
+                    </div>
+                  )}
+                  {selectedSale.vat > 0 && (
+                    <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                      <span>ভ্যাট:</span>
+                      <span>+৳{selectedSale.vat}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between font-bold text-lg pt-2 border-t border-gray-200 dark:border-gray-700">
+                    <span>সর্বমোট:</span>
+                    <span>৳{selectedSale.finalTotal || selectedSale.totalAmount}</span>
                   </div>
-                )}
-                <div className="flex justify-between font-bold text-lg pt-2 border-t border-gray-200 dark:border-gray-700">
-                  <span>সর্বমোট:</span>
-                  <span>৳{selectedSale.finalTotal || selectedSale.totalAmount}</span>
+                  <div className="flex justify-between text-gray-600 dark:text-gray-400 pt-2">
+                    <span>প্রদত্ত:</span>
+                    <span>৳{selectedSale.paidAmount}</span>
+                  </div>
+                  {selectedSale.dueAmount > 0 && (
+                    <div className="flex justify-between text-red-600 dark:text-red-400 font-medium">
+                      <span>বকেয়া:</span>
+                      <span>৳{selectedSale.dueAmount}</span>
+                    </div>
+                  )}
                 </div>
-                <div className="flex justify-between text-gray-600 dark:text-gray-400 pt-2">
-                  <span>প্রদত্ত:</span>
-                  <span>৳{selectedSale.paidAmount}</span>
+
+                <div className="mt-8 text-center text-sm text-gray-500 dark:text-gray-400">
+                  <p>আমাদের সাথে কেনাকাটা করার জন্য ধন্যবাদ!</p>
                 </div>
-                {selectedSale.dueAmount > 0 && (
-                  <div className="flex justify-between text-red-600 dark:text-red-400 font-medium">
-                    <span>বকেয়া:</span>
-                    <span>৳{selectedSale.dueAmount}</span>
-                  </div>
-                )}
               </div>
 
-              <div className="mt-8 text-center text-sm text-gray-500 dark:text-gray-400">
-                <p>আমাদের সাথে কেনাকাটা করার জন্য ধন্যবাদ!</p>
+              <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 flex justify-end gap-3">
+                <button
+                  onClick={() => shareOnWhatsApp(selectedSale)}
+                  className="flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors"
+                >
+                  <Share2 size={18} className="mr-2" />
+                  WhatsApp-এ পাঠান
+                </button>
+                <button
+                  onClick={() => window.print()}
+                  className="flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+                >
+                  <Printer size={18} className="mr-2" />
+                  প্রিন্ট করুন
+                </button>
               </div>
-            </div>
-
-            <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 flex justify-end gap-3">
-              <button
-                onClick={() => shareOnWhatsApp(selectedSale)}
-                className="flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors"
-              >
-                <Share2 size={18} className="mr-2" />
-                WhatsApp-এ পাঠান
-              </button>
-              <button
-                onClick={() => window.print()}
-                className="flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
-              >
-                <Printer size={18} className="mr-2" />
-                প্রিন্ট করুন
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

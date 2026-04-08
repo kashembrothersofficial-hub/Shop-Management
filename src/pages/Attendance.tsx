@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { downloadCSV } from '../utils/export';
-import { UserCheck, UserPlus, Trash2, Calendar, CheckCircle, XCircle, Clock, DollarSign, HandCoins, CreditCard, Download } from 'lucide-react';
+import { UserCheck, UserPlus, Trash2, Calendar, CheckCircle, XCircle, Clock, DollarSign, HandCoins, CreditCard, Download, X } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 
 export const Attendance: React.FC = () => {
   const { employees, setEmployees, attendance, setAttendance, settings, salaryRecords, setSalaryRecords } = useAppContext();
@@ -478,47 +479,60 @@ export const Attendance: React.FC = () => {
       )}
 
       {/* Advance Payment Modal */}
-      {isAdvanceModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-[95%] max-w-sm overflow-hidden flex flex-col">
-            <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">অগ্রিম প্রদান</h2>
-              <button onClick={() => setIsAdvanceModalOpen(false)} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
-                <span className="text-2xl leading-none">&times;</span>
-              </button>
-            </div>
-            <form onSubmit={handleAddAdvance} className="p-4 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">পরিমাণ ({settings.currencySymbol})</label>
-                <input
-                  type="number"
-                  required
-                  min="1"
-                  value={advanceAmount}
-                  onChange={e => setAdvanceAmount(e.target.value ? Number(e.target.value) : '')}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-orange-500 outline-none"
-                />
-              </div>
-              <div className="pt-4 flex justify-end gap-3">
-                <button
-                  type="button"
-                  onClick={() => setIsAdvanceModalOpen(false)}
-                  className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg font-medium transition-colors"
-                >
-                  বাতিল
-                </button>
-                <button
-                  type="submit"
-                  disabled={!advanceAmount || Number(advanceAmount) <= 0}
-                  className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
-                >
-                  প্রদান করুন
+      <AnimatePresence>
+        {isAdvanceModalOpen && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+          >
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              transition={{ type: "spring", duration: 0.3 }}
+              className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-[95%] max-w-sm overflow-hidden flex flex-col"
+            >
+              <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+                <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">অগ্রিম প্রদান</h2>
+                <button onClick={() => setIsAdvanceModalOpen(false)} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                  <X size={24} />
                 </button>
               </div>
-            </form>
-          </div>
-        </div>
-      )}
+              <form onSubmit={handleAddAdvance} className="p-4 space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">পরিমাণ ({settings.currencySymbol})</label>
+                  <input
+                    type="number"
+                    required
+                    min="1"
+                    value={advanceAmount}
+                    onChange={e => setAdvanceAmount(e.target.value ? Number(e.target.value) : '')}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-orange-500 outline-none"
+                  />
+                </div>
+                <div className="pt-4 flex justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setIsAdvanceModalOpen(false)}
+                    className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg font-medium transition-colors"
+                  >
+                    বাতিল
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={!advanceAmount || Number(advanceAmount) <= 0}
+                    className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
+                  >
+                    প্রদান করুন
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
