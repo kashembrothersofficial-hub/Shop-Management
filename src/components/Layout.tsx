@@ -21,7 +21,7 @@ export const Layout: React.FC = () => {
     { to: '/attendance', icon: <UserCheck size={20} />, label: 'স্টাফ ম্যানেজমেন্ট', roles: ['admin'] },
     { to: '/sales-history', icon: <History size={20} />, label: 'বিক্রয়ের ইতিহাস', roles: ['admin', 'cashier'] },
     { to: '/customer-dues', icon: <Users size={20} />, label: 'বকেয়া খাতা', roles: ['admin', 'cashier'] },
-    { to: '/supplier-payments', icon: <Truck size={20} />, label: 'সাপ্লায়ার পেমেন্ট', roles: ['admin'] },
+    { to: '/supplier-payments', icon: <Truck size={20} />, label: 'সাপ্লায়ার ও ক্রয়', roles: ['admin'] },
     { to: '/expenses', icon: <Wallet size={20} />, label: 'খরচের খাতা', roles: ['admin'] },
     { to: '/returns', icon: <RotateCcw size={20} />, label: 'পণ্য ফেরত ও ড্যামেজ', roles: ['admin'] },
     { to: '/settings', icon: <SettingsIcon size={20} />, label: 'সেটিংস', roles: ['admin'] },

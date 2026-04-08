@@ -44,6 +44,17 @@ export interface CartItem {
   total: number;
 }
 
+export interface Quotation {
+  id: string;
+  date: string;
+  items: CartItem[];
+  totalAmount: number;
+  discount: number;
+  vat: number;
+  finalTotal: number;
+  customerName: string;
+}
+
 export interface Sale {
   id: string;
   date: string;
@@ -64,6 +75,14 @@ export interface HeldSale {
   items: CartItem[];
   customerName: string;
   note: string;
+}
+
+export interface SalaryRecord {
+  id: string;
+  employeeId: string;
+  month: string; // YYYY-MM
+  amountPaid: number;
+  date: string;
 }
 
 export interface Employee {
@@ -104,6 +123,7 @@ export interface Customer {
   phone: string;
   totalDue: number;
   payments: PaymentRecord[];
+  points?: number;
 }
 
 export interface Supplier {
@@ -131,17 +151,22 @@ export const initialSettings: ShopSettings = {
 };
 
 export const initialProducts: Product[] = [
-  { id: 'p1', name: 'মিনিকেট চাল (২৫ কেজি)', category: 'চাল', buyPrice: 1500, sellPrice: 1650, stock: 50, image: 'https://picsum.photos/seed/rice/200' },
-  { id: 'p2', name: 'সয়াবিন তেল (৫ লিটার)', category: 'তেল', buyPrice: 750, sellPrice: 820, stock: 30, image: 'https://picsum.photos/seed/oil/200' },
-  { id: 'p3', name: 'মসুর ডাল (১ কেজি)', category: 'ডাল', buyPrice: 110, sellPrice: 130, stock: 100, image: 'https://picsum.photos/seed/lentil/200' },
-  { id: 'p4', name: 'চিনি (১ কেজি)', category: 'মুদি', buyPrice: 125, sellPrice: 140, stock: 80, image: 'https://picsum.photos/seed/sugar/200' },
-  { id: 'p5', name: 'লবণ (১ কেজি)', category: 'মুদি', buyPrice: 35, sellPrice: 40, stock: 150, image: 'https://picsum.photos/seed/salt/200' },
+  { id: 'p1', name: 'সাদা সেলাই সুতো (১টি)', category: 'সুতো', buyPrice: 15, sellPrice: 20, stock: 100, image: 'https://picsum.photos/seed/thread1/200' },
+  { id: 'p2', name: 'কালো সেলাই সুতো (১টি)', category: 'সুতো', buyPrice: 15, sellPrice: 20, stock: 100, image: 'https://picsum.photos/seed/thread2/200' },
+  { id: 'p3', name: 'শার্টের বুতাম (১ প্যাকেট)', category: 'বুতাম', buyPrice: 40, sellPrice: 60, stock: 50, image: 'https://picsum.photos/seed/button1/200' },
+  { id: 'p4', name: 'ডিজাইনার গোল্ডেন লেস (গজ)', category: 'লেস', buyPrice: 25, sellPrice: 40, stock: 200, image: 'https://picsum.photos/seed/lace1/200' },
+  { id: 'p5', name: 'ভারী দর্জি আয়রন', category: 'যন্ত্রপাতি', buyPrice: 1200, sellPrice: 1500, stock: 5, image: 'https://picsum.photos/seed/iron1/200' },
+  { id: 'p6', name: 'বক্রম / ফিউজিং (গজ)', category: 'বক্রম ও ফিউজিং', buyPrice: 30, sellPrice: 50, stock: 100, image: 'https://picsum.photos/seed/fusing1/200' },
+  { id: 'p7', name: 'মেশিনের সুই (১ প্যাকেট)', category: 'মেশিনের যন্ত্রাংশ', buyPrice: 50, sellPrice: 80, stock: 30, image: 'https://picsum.photos/seed/needle1/200' },
+  { id: 'p8', name: 'ইঞ্চি ফিতা (টেপ)', category: 'যন্ত্রপাতি', buyPrice: 10, sellPrice: 20, stock: 50, image: 'https://picsum.photos/seed/tape1/200' },
+  { id: 'p9', name: 'সুতো কাটার কেঁচি (Cutter)', category: 'যন্ত্রপাতি', buyPrice: 25, sellPrice: 40, stock: 40, image: 'https://picsum.photos/seed/cutter1/200' },
+  { id: 'p10', name: 'মেশিনের তেল (১ বোতল)', category: 'মেশিনের যন্ত্রাংশ', buyPrice: 30, sellPrice: 50, stock: 20, image: 'https://picsum.photos/seed/oil1/200' },
 ];
 
 export const initialCustomers: Customer[] = [
-  { id: 'c1', name: 'রহিম মিয়া', phone: '01711000001', totalDue: 1500, payments: [{ id: 'cp1', date: new Date().toISOString(), amount: 500, note: 'প্রাথমিক জমা' }] },
-  { id: 'c2', name: 'করিম শেখ', phone: '01711000002', totalDue: 0, payments: [] },
-  { id: 'c3', name: 'আব্দুল জব্বার', phone: '01711000003', totalDue: 3200, payments: [] },
+  { id: 'c1', name: 'রহিম মিয়া', phone: '01711000001', totalDue: 1500, points: 50, payments: [{ id: 'cp1', date: new Date().toISOString(), amount: 500, note: 'প্রাথমিক জমা' }] },
+  { id: 'c2', name: 'করিম শেখ', phone: '01711000002', totalDue: 0, points: 120, payments: [] },
+  { id: 'c3', name: 'আব্দুল জব্বার', phone: '01711000003', totalDue: 3200, points: 0, payments: [] },
 ];
 
 export const initialSuppliers: Supplier[] = [

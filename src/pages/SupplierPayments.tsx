@@ -1,18 +1,25 @@
 import React, { useState } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { Supplier, PaymentRecord } from '../utils/mockData';
+import { downloadCSV } from '../utils/export';
 import { format } from 'date-fns';
-import { Search, DollarSign, History, X } from 'lucide-react';
+import { Search, DollarSign, History, X, Plus, PackagePlus, Download } from 'lucide-react';
 
 export const SupplierPayments: React.FC = () => {
-  const { suppliers, setSuppliers } = useAppContext();
+  const { suppliers, setSuppliers, products, setProducts } = useAppContext();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+  const [isPurchaseModalOpen, setIsPurchaseModalOpen] = useState(false);
   
   const [paymentAmount, setPaymentAmount] = useState<number | ''>('');
   const [paymentNote, setPaymentNote] = useState('');
+
+  const [purchaseProductId, setPurchaseProductId] = useState('');
+  const [purchaseQuantity, setPurchaseQuantity] = useState<number | ''>('');
+  const [purchasePrice, setPurchasePrice] = useState<number | ''>('');
+  const [purchaseNote, setPurchaseNote] = useState('');
 
   const filteredSuppliers = suppliers.filter(s => 
     s.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -21,11 +28,29 @@ export const SupplierPayments: React.FC = () => {
 
   const totalDues = suppliers.reduce((sum, s) => sum + s.totalDue, 0);
 
+  const handleExportCSV = () => {
+    const dataToExport = filteredSuppliers.map(s => ({
+      'সাপ্লায়ারের নাম': s.name,
+      'ফোন নম্বর': s.phone || 'N/A',
+      'মোট প্রদেয়': s.totalDue
+    }));
+    downloadCSV(dataToExport, `supplier_dues_${new Date().toISOString().split('T')[0]}`);
+  };
+
   const handleOpenPaymentModal = (supplier: Supplier) => {
     setSelectedSupplier(supplier);
     setPaymentAmount('');
     setPaymentNote('');
     setIsPaymentModalOpen(true);
+  };
+
+  const handleOpenPurchaseModal = (supplier: Supplier) => {
+    setSelectedSupplier(supplier);
+    setPurchaseProductId('');
+    setPurchaseQuantity('');
+    setPurchasePrice('');
+    setPurchaseNote('');
+    setIsPurchaseModalOpen(true);
   };
 
   const handleOpenHistoryModal = (supplier: Supplier) => {
@@ -60,11 +85,57 @@ export const SupplierPayments: React.FC = () => {
     setSelectedSupplier(null);
   };
 
+  const handleSavePurchase = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedSupplier || !purchaseProductId || !purchaseQuantity || !purchasePrice) return;
+
+    const qty = Number(purchaseQuantity);
+    const price = Number(purchasePrice);
+    const totalCost = qty * price;
+
+    const product = products.find(p => p.id === purchaseProductId);
+    if (!product) return;
+
+    const newPurchaseRecord: PaymentRecord = {
+      id: `pur-${Date.now()}`,
+      date: new Date().toISOString(),
+      amount: -totalCost, // Negative amount in payments array represents adding to due
+      note: purchaseNote || `${product.name} ক্রয় (${qty} x ৳${price})`
+    };
+
+    // Update supplier due
+    setSuppliers(suppliers.map(s => {
+      if (s.id === selectedSupplier.id) {
+        return {
+          ...s,
+          totalDue: s.totalDue + totalCost,
+          payments: [newPurchaseRecord, ...s.payments]
+        };
+      }
+      return s;
+    }));
+
+    // Update product stock and buy price
+    setProducts(products.map(p => {
+      if (p.id === purchaseProductId) {
+        return {
+          ...p,
+          stock: p.stock + qty,
+          buyPrice: price // Update to latest buy price
+        };
+      }
+      return p;
+    }));
+
+    setIsPurchaseModalOpen(false);
+    setSelectedSupplier(null);
+  };
+
   return (
     <div className="flex flex-col h-full bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
       <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row justify-between items-center gap-4 bg-gray-50 dark:bg-gray-800/50">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">সাপ্লায়ার পেমেন্ট</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">সাপ্লায়ার ও ক্রয়</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
             মোট প্রদেয়: <span className="font-bold text-red-600 dark:text-red-400 text-lg">৳{totalDues}</span>
           </p>
@@ -80,6 +151,14 @@ export const SupplierPayments: React.FC = () => {
               className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
             />
           </div>
+          <button
+            onClick={handleExportCSV}
+            className="flex items-center justify-center px-3 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg font-medium transition-colors whitespace-nowrap"
+            title="ডাউনলোড এক্সেল (CSV)"
+          >
+            <Download size={18} className="mr-1" />
+            <span className="hidden sm:inline">এক্সপোর্ট</span>
+          </button>
         </div>
       </div>
 
@@ -105,6 +184,13 @@ export const SupplierPayments: React.FC = () => {
                 </td>
                 <td className="p-4 text-center">
                   <div className="flex justify-center gap-2">
+                    <button 
+                      onClick={() => handleOpenPurchaseModal(supplier)}
+                      className="p-2 text-orange-600 hover:bg-orange-50 dark:text-orange-400 dark:hover:bg-orange-900/30 rounded-lg transition-colors inline-flex items-center"
+                      title="নতুন ক্রয়"
+                    >
+                      <PackagePlus size={18} />
+                    </button>
                     <button 
                       onClick={() => handleOpenPaymentModal(supplier)}
                       disabled={supplier.totalDue <= 0}
@@ -194,6 +280,103 @@ export const SupplierPayments: React.FC = () => {
         </div>
       )}
 
+      {/* Purchase Modal */}
+      {isPurchaseModalOpen && selectedSupplier && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-[95%] max-w-md overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">নতুন ক্রয় (পারচেজ)</h2>
+              <button onClick={() => setIsPurchaseModalOpen(false)} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                <X size={24} />
+              </button>
+            </div>
+            <form onSubmit={handleSavePurchase} className="p-4 space-y-4 overflow-y-auto">
+              <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-100 dark:border-blue-800/30 mb-4">
+                <p className="text-sm text-gray-600 dark:text-gray-400">সাপ্লায়ার: <span className="font-bold text-gray-900 dark:text-gray-100">{selectedSupplier.name}</span></p>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">প্রোডাক্ট নির্বাচন করুন</label>
+                <select
+                  required
+                  value={purchaseProductId}
+                  onChange={e => {
+                    setPurchaseProductId(e.target.value);
+                    const prod = products.find(p => p.id === e.target.value);
+                    if (prod) setPurchasePrice(prod.buyPrice);
+                  }}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 outline-none"
+                >
+                  <option value="">-- নির্বাচন করুন --</option>
+                  {products.map(p => (
+                    <option key={p.id} value={p.id}>{p.name} (বর্তমান স্টক: {p.stock})</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">পরিমাণ</label>
+                  <input
+                    type="number"
+                    required
+                    min="1"
+                    value={purchaseQuantity}
+                    onChange={e => setPurchaseQuantity(e.target.value ? Number(e.target.value) : '')}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ক্রয় মূল্য (প্রতিটি)</label>
+                  <input
+                    type="number"
+                    required
+                    min="0"
+                    value={purchasePrice}
+                    onChange={e => setPurchasePrice(e.target.value ? Number(e.target.value) : '')}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 outline-none"
+                  />
+                </div>
+              </div>
+
+              {purchaseQuantity && purchasePrice && (
+                <div className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg flex justify-between items-center">
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">মোট খরচ:</span>
+                  <span className="text-lg font-bold text-red-600 dark:text-red-400">৳{Number(purchaseQuantity) * Number(purchasePrice)}</span>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">নোট (ঐচ্ছিক)</label>
+                <input
+                  type="text"
+                  value={purchaseNote}
+                  onChange={e => setPurchaseNote(e.target.value)}
+                  placeholder="যেমন: চালান নং ১২৩৪"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 outline-none"
+                />
+              </div>
+              <div className="pt-4 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsPurchaseModalOpen(false)}
+                  className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg font-medium transition-colors"
+                >
+                  বাতিল
+                </button>
+                <button
+                  type="submit"
+                  disabled={!purchaseProductId || !purchaseQuantity || !purchasePrice}
+                  className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
+                >
+                  ক্রয় সম্পন্ন করুন
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* History Modal */}
       {isHistoryModalOpen && selectedSupplier && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
@@ -222,7 +405,9 @@ export const SupplierPayments: React.FC = () => {
                         <p className="text-sm text-gray-500 dark:text-gray-400">{payment.note}</p>
                       </div>
                       <div className="text-right">
-                        <p className="font-bold text-green-600 dark:text-green-400">- ৳{payment.amount}</p>
+                        <p className={`font-bold ${payment.amount < 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
+                          {payment.amount < 0 ? '+' : '-'} ৳{Math.abs(payment.amount)}
+                        </p>
                       </div>
                     </div>
                   ))}

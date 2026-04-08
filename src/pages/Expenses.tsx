@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { Expense } from '../utils/mockData';
+import { downloadCSV } from '../utils/export';
 import { format } from 'date-fns';
-import { Plus, Wallet, Trash2 } from 'lucide-react';
+import { Plus, Wallet, Trash2, Download } from 'lucide-react';
 
 export const Expenses: React.FC = () => {
   const { expenses, setExpenses, settings } = useAppContext();
@@ -36,6 +37,15 @@ export const Expenses: React.FC = () => {
     }
   };
 
+  const handleExportCSV = () => {
+    const dataToExport = expenses.map(e => ({
+      'তারিখ': format(new Date(e.date), 'dd/MM/yyyy'),
+      'খরচের কারণ': e.reason,
+      'পরিমাণ': e.amount
+    }));
+    downloadCSV(dataToExport, `expenses_${new Date().toISOString().split('T')[0]}`);
+  };
+
   const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
 
   return (
@@ -50,13 +60,23 @@ export const Expenses: React.FC = () => {
             মোট খরচ: <span className="font-bold text-red-600 dark:text-red-400 text-lg">{settings.currencySymbol}{totalExpenses}</span>
           </p>
         </div>
-        <button
-          onClick={() => setIsAddModalOpen(true)}
-          className="w-full sm:w-auto px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2 shadow-sm"
-        >
-          <Plus size={20} />
-          নতুন খরচ যোগ করুন
-        </button>
+        <div className="flex gap-2 w-full sm:w-auto">
+          <button
+            onClick={handleExportCSV}
+            className="flex items-center justify-center px-3 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg font-medium transition-colors whitespace-nowrap"
+            title="ডাউনলোড এক্সেল (CSV)"
+          >
+            <Download size={18} className="mr-1" />
+            <span className="hidden sm:inline">এক্সপোর্ট</span>
+          </button>
+          <button
+            onClick={() => setIsAddModalOpen(true)}
+            className="flex-1 sm:flex-none px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2 shadow-sm"
+          >
+            <Plus size={20} />
+            নতুন খরচ
+          </button>
+        </div>
       </div>
 
       <div className="flex-1 overflow-x-auto whitespace-nowrap">

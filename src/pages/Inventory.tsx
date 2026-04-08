@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { Product } from '../utils/mockData';
+import { downloadCSV } from '../utils/export';
 import { Plus, Edit, Trash2, Search, X, Download, Upload, Filter } from 'lucide-react';
 
 export const Inventory: React.FC = () => {
@@ -33,21 +34,16 @@ export const Inventory: React.FC = () => {
   });
 
   const handleExportCSV = () => {
-    const headers = ['ID', 'Name', 'Category', 'BuyPrice', 'SellPrice', 'Stock', 'ImageURL'];
-    const csvContent = [
-      headers.join(','),
-      ...products.map(p => `${p.id},"${p.name}","${p.category}",${p.buyPrice},${p.sellPrice},${p.stock},"${p.image}"`)
-    ].join('\n');
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', `inventory_${new Date().toISOString().split('T')[0]}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    const dataToExport = products.map(p => ({
+      ID: p.id,
+      Name: p.name,
+      Category: p.category,
+      BuyPrice: p.buyPrice,
+      SellPrice: p.sellPrice,
+      Stock: p.stock,
+      ImageURL: p.image
+    }));
+    downloadCSV(dataToExport, `inventory_${new Date().toISOString().split('T')[0]}`);
   };
 
   const handleImportCSV = (e: React.ChangeEvent<HTMLInputElement>) => {

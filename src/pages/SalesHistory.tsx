@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { Sale } from '../utils/mockData';
+import { downloadCSV } from '../utils/export';
 import { format } from 'date-fns';
-import { Search, Calendar, Eye, X, Receipt, Printer, Share2 } from 'lucide-react';
+import { Search, Calendar, Eye, X, Receipt, Printer, Share2, Download } from 'lucide-react';
 
 export const SalesHistory: React.FC = () => {
   const { sales, settings } = useAppContext();
@@ -15,6 +16,22 @@ export const SalesHistory: React.FC = () => {
     const matchesDate = dateFilter ? sale.date.startsWith(dateFilter) : true;
     return matchesSearch && matchesDate;
   });
+
+  const handleExportCSV = () => {
+    const dataToExport = filteredSales.map(sale => ({
+      'ইনভয়েস নং': sale.id,
+      'তারিখ': format(new Date(sale.date), 'dd/MM/yyyy hh:mm a'),
+      'ক্রেতার নাম': sale.customerName,
+      'মোট মূল্য': sale.totalAmount,
+      'ডিসকাউন্ট': sale.discount,
+      'ভ্যাট': sale.vat,
+      'সর্বমোট': sale.finalTotal || sale.totalAmount,
+      'প্রদত্ত': sale.paidAmount,
+      'বকেয়া': sale.dueAmount,
+      'লাভ': sale.profit
+    }));
+    downloadCSV(dataToExport, `sales_history_${new Date().toISOString().split('T')[0]}`);
+  };
 
   const shareOnWhatsApp = (sale: Sale) => {
     let text = `*${settings.shopName}*\n`;
@@ -63,6 +80,14 @@ export const SalesHistory: React.FC = () => {
               className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
             />
           </div>
+          <button
+            onClick={handleExportCSV}
+            className="flex items-center justify-center px-3 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg font-medium transition-colors whitespace-nowrap"
+            title="ডাউনলোড এক্সেল (CSV)"
+          >
+            <Download size={18} className="mr-1" />
+            <span className="hidden sm:inline">এক্সপোর্ট</span>
+          </button>
         </div>
       </div>
 

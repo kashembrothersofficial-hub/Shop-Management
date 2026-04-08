@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Product, Sale, Customer, Supplier, ShopSettings, HeldSale, Employee, AttendanceRecord, DayCloseRecord, User, Expense, ReturnRecord, initialProducts, initialSales, initialCustomers, initialSuppliers, initialSettings, initialEmployees } from '../utils/mockData';
+import { Product, Sale, Customer, Supplier, ShopSettings, HeldSale, Employee, AttendanceRecord, DayCloseRecord, User, Expense, ReturnRecord, Quotation, SalaryRecord, initialProducts, initialSales, initialCustomers, initialSuppliers, initialSettings, initialEmployees } from '../utils/mockData';
 
 interface AppContextType {
   theme: 'light' | 'dark';
@@ -28,11 +28,16 @@ interface AppContextType {
   setExpenses: React.Dispatch<React.SetStateAction<Expense[]>>;
   returns: ReturnRecord[];
   setReturns: React.Dispatch<React.SetStateAction<ReturnRecord[]>>;
+  quotations: Quotation[];
+  setQuotations: React.Dispatch<React.SetStateAction<Quotation[]>>;
+  salaryRecords: SalaryRecord[];
+  setSalaryRecords: React.Dispatch<React.SetStateAction<SalaryRecord[]>>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  // Keep theme and auth in localStorage so you don't get logged out on every refresh during development
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     const saved = localStorage.getItem('theme');
     return (saved as 'light' | 'dark') || 'light';
@@ -43,60 +48,20 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return saved ? JSON.parse(saved) : null;
   });
 
-  const [products, setProducts] = useState<Product[]>(() => {
-    const saved = localStorage.getItem('products');
-    return saved ? JSON.parse(saved) : initialProducts;
-  });
-
-  const [sales, setSales] = useState<Sale[]>(() => {
-    const saved = localStorage.getItem('sales');
-    return saved ? JSON.parse(saved) : initialSales;
-  });
-
-  const [customers, setCustomers] = useState<Customer[]>(() => {
-    const saved = localStorage.getItem('customers');
-    return saved ? JSON.parse(saved) : initialCustomers;
-  });
-
-  const [suppliers, setSuppliers] = useState<Supplier[]>(() => {
-    const saved = localStorage.getItem('suppliers');
-    return saved ? JSON.parse(saved) : initialSuppliers;
-  });
-
-  const [settings, setSettings] = useState<ShopSettings>(() => {
-    const saved = localStorage.getItem('settings');
-    return saved ? JSON.parse(saved) : initialSettings;
-  });
-
-  const [heldSales, setHeldSales] = useState<HeldSale[]>(() => {
-    const saved = localStorage.getItem('heldSales');
-    return saved ? JSON.parse(saved) : [];
-  });
-
-  const [employees, setEmployees] = useState<Employee[]>(() => {
-    const saved = localStorage.getItem('employees');
-    return saved ? JSON.parse(saved) : initialEmployees;
-  });
-
-  const [attendance, setAttendance] = useState<AttendanceRecord[]>(() => {
-    const saved = localStorage.getItem('attendance');
-    return saved ? JSON.parse(saved) : [];
-  });
-
-  const [dayCloseRecords, setDayCloseRecords] = useState<DayCloseRecord[]>(() => {
-    const saved = localStorage.getItem('dayCloseRecords');
-    return saved ? JSON.parse(saved) : [];
-  });
-
-  const [expenses, setExpenses] = useState<Expense[]>(() => {
-    const saved = localStorage.getItem('expenses');
-    return saved ? JSON.parse(saved) : [];
-  });
-
-  const [returns, setReturns] = useState<ReturnRecord[]>(() => {
-    const saved = localStorage.getItem('returns');
-    return saved ? JSON.parse(saved) : [];
-  });
+  // Business Data - In-Memory Only (No localStorage)
+  const [products, setProducts] = useState<Product[]>(initialProducts);
+  const [sales, setSales] = useState<Sale[]>(initialSales);
+  const [customers, setCustomers] = useState<Customer[]>(initialCustomers);
+  const [suppliers, setSuppliers] = useState<Supplier[]>(initialSuppliers);
+  const [settings, setSettings] = useState<ShopSettings>(initialSettings);
+  const [heldSales, setHeldSales] = useState<HeldSale[]>([]);
+  const [employees, setEmployees] = useState<Employee[]>(initialEmployees);
+  const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
+  const [dayCloseRecords, setDayCloseRecords] = useState<DayCloseRecord[]>([]);
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [returns, setReturns] = useState<ReturnRecord[]>([]);
+  const [quotations, setQuotations] = useState<Quotation[]>([]);
+  const [salaryRecords, setSalaryRecords] = useState<SalaryRecord[]>([]);
 
   useEffect(() => {
     localStorage.setItem('theme', theme);
@@ -115,50 +80,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   }, [currentUser]);
 
-  useEffect(() => {
-    localStorage.setItem('products', JSON.stringify(products));
-  }, [products]);
-
-  useEffect(() => {
-    localStorage.setItem('sales', JSON.stringify(sales));
-  }, [sales]);
-
-  useEffect(() => {
-    localStorage.setItem('customers', JSON.stringify(customers));
-  }, [customers]);
-
-  useEffect(() => {
-    localStorage.setItem('suppliers', JSON.stringify(suppliers));
-  }, [suppliers]);
-
-  useEffect(() => {
-    localStorage.setItem('settings', JSON.stringify(settings));
-  }, [settings]);
-
-  useEffect(() => {
-    localStorage.setItem('heldSales', JSON.stringify(heldSales));
-  }, [heldSales]);
-
-  useEffect(() => {
-    localStorage.setItem('employees', JSON.stringify(employees));
-  }, [employees]);
-
-  useEffect(() => {
-    localStorage.setItem('attendance', JSON.stringify(attendance));
-  }, [attendance]);
-
-  useEffect(() => {
-    localStorage.setItem('dayCloseRecords', JSON.stringify(dayCloseRecords));
-  }, [dayCloseRecords]);
-
-  useEffect(() => {
-    localStorage.setItem('expenses', JSON.stringify(expenses));
-  }, [expenses]);
-
-  useEffect(() => {
-    localStorage.setItem('returns', JSON.stringify(returns));
-  }, [returns]);
-
   const toggleTheme = () => setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
 
   return (
@@ -175,7 +96,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       attendance, setAttendance,
       dayCloseRecords, setDayCloseRecords,
       expenses, setExpenses,
-      returns, setReturns
+      returns, setReturns,
+      quotations, setQuotations,
+      salaryRecords, setSalaryRecords
     }}>
       {children}
     </AppContext.Provider>

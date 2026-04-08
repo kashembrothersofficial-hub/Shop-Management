@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { useAppContext } from '../context/AppContext';
-import { UserCheck, UserPlus, Trash2, Calendar, CheckCircle, XCircle, Clock, DollarSign, HandCoins } from 'lucide-react';
+import { downloadCSV } from '../utils/export';
+import { UserCheck, UserPlus, Trash2, Calendar, CheckCircle, XCircle, Clock, DollarSign, HandCoins, CreditCard, Download } from 'lucide-react';
 
 export const Attendance: React.FC = () => {
-  const { employees, setEmployees, attendance, setAttendance, settings } = useAppContext();
+  const { employees, setEmployees, attendance, setAttendance, settings, salaryRecords, setSalaryRecords } = useAppContext();
+  const [activeTab, setActiveTab] = useState<'attendance' | 'payroll'>('attendance');
   const [newEmpName, setNewEmpName] = useState('');
   const [newEmpPhone, setNewEmpPhone] = useState('');
   const [newEmpSalary, setNewEmpSalary] = useState<number | ''>('');
@@ -12,6 +14,7 @@ export const Attendance: React.FC = () => {
   const [isAdvanceModalOpen, setIsAdvanceModalOpen] = useState(false);
   const [selectedEmpId, setSelectedEmpId] = useState('');
   const [advanceAmount, setAdvanceAmount] = useState<number | ''>('');
+  const [payrollMonth, setPayrollMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM
 
   const handleAddEmployee = (e: React.FormEvent) => {
     e.preventDefault();
@@ -88,26 +91,131 @@ export const Attendance: React.FC = () => {
     setIsAdvanceModalOpen(true);
   };
 
+  const handlePaySalary = (empId: string, netSalary: number) => {
+    if (window.confirm(`আপনি কি নিশ্চিত যে ৳${netSalary} বেতন পরিশোধ করতে চান?`)) {
+      const newRecord = {
+        id: `sal-${Date.now()}`,
+        employeeId: empId,
+        month: payrollMonth,
+        amountPaid: netSalary,
+        date: new Date().toISOString()
+      };
+      setSalaryRecords([...salaryRecords, newRecord]);
+
+      // Reset advance payment after salary is paid
+      setEmployees(employees.map(emp => {
+        if (emp.id === empId) {
+          return { ...emp, advancePayment: 0 };
+        }
+        return emp;
+      }));
+    }
+  };
+
+  const getPayrollData = (empId: string) => {
+    const emp = employees.find(e => e.id === empId);
+    if (!emp) return null;
+
+    const monthAttendance = attendance.filter(a => a.employeeId === empId && a.date.startsWith(payrollMonth));
+    const presentDays = monthAttendance.filter(a => a.status === 'present').length;
+    const absentDays = monthAttendance.filter(a => a.status === 'absent').length;
+    
+    // Assuming 30 days a month for simple calculation
+    const perDaySalary = emp.baseSalary / 30;
+    const absenceDeduction = absentDays * perDaySalary;
+    const advance = emp.advancePayment || 0;
+    const netSalary = emp.baseSalary - absenceDeduction - advance;
+
+    const isPaid = salaryRecords.some(r => r.employeeId === empId && r.month === payrollMonth);
+
+    return {
+      presentDays,
+      absentDays,
+      absenceDeduction: Math.round(absenceDeduction),
+      advance,
+      netSalary: Math.max(0, Math.round(netSalary)),
+      isPaid
+    };
+  };
+
+  const handleExportCSV = () => {
+    if (activeTab === 'attendance') {
+      const dataToExport = employees.map(emp => {
+        const status = getAttendanceStatus(emp.id);
+        const statusText = status === 'present' ? 'উপস্থিত' : status === 'absent' ? 'অনুপস্থিত' : status === 'leave' ? 'ছুটি' : 'চিহ্নিত করা হয়নি';
+        return {
+          'তারিখ': selectedDate,
+          'স্টাফের নাম': emp.name,
+          'ফোন নম্বর': emp.phone || 'N/A',
+          'হাজিরা স্ট্যাটাস': statusText,
+          'নির্ধারিত বেতন': emp.baseSalary,
+          'অগ্রিম': emp.advancePayment || 0
+        };
+      });
+      downloadCSV(dataToExport, `attendance_${selectedDate}`);
+    } else {
+      const dataToExport = employees.map(emp => {
+        const data = getPayrollData(emp.id);
+        if (!data) return null;
+        return {
+          'মাস': payrollMonth,
+          'স্টাফের নাম': emp.name,
+          'উপস্থিতি (দিন)': data.presentDays,
+          'অনুপস্থিতি (দিন)': data.absentDays,
+          'নির্ধারিত বেতন': emp.baseSalary,
+          'কর্তন (অনুপস্থিতি + অগ্রিম)': data.absenceDeduction + data.advance,
+          'প্রদেয় বেতন': data.netSalary,
+          'স্ট্যাটাস': data.isPaid ? 'পরিশোধিত' : 'বকেয়া'
+        };
+      }).filter(Boolean);
+      downloadCSV(dataToExport, `payroll_${payrollMonth}`);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <h1 className="text-2xl font-bold text-gray-800 dark:text-white flex items-center">
           <UserCheck className="mr-3 text-blue-600" size={28} />
-          স্টাফ ম্যানেজমেন্ট
+          স্টাফ ও পেরোল ম্যানেজমেন্ট
         </h1>
         
-        <div className="flex items-center space-x-2 bg-white dark:bg-gray-800 p-2 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-          <Calendar size={20} className="text-gray-500 dark:text-gray-400" />
-          <input
-            type="date"
-            value={selectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)}
-            className="bg-transparent border-none focus:ring-0 text-gray-700 dark:text-gray-300 font-medium"
-          />
+        <div className="flex gap-2">
+          <button
+            onClick={handleExportCSV}
+            className="flex items-center justify-center px-3 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg font-medium transition-colors whitespace-nowrap"
+            title="ডাউনলোড এক্সেল (CSV)"
+          >
+            <Download size={18} className="mr-1" />
+            <span className="hidden sm:inline">এক্সপোর্ট</span>
+          </button>
+          <div className="flex gap-2 bg-gray-100 dark:bg-gray-800 p-1 rounded-lg">
+            <button
+              onClick={() => setActiveTab('attendance')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                activeTab === 'attendance'
+                  ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+              }`}
+            >
+              হাজিরা
+            </button>
+            <button
+              onClick={() => setActiveTab('payroll')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                activeTab === 'payroll'
+                  ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+              }`}
+            >
+              পেরোল (বেতন)
+            </button>
+          </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      {activeTab === 'attendance' ? (
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Add Employee Form */}
         <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 lg:col-span-1 h-fit">
           <h2 className="text-lg font-semibold text-gray-800 dark:text-white mb-4 flex items-center">
@@ -163,10 +271,19 @@ export const Attendance: React.FC = () => {
 
         {/* Attendance & Salary List */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 lg:col-span-3 overflow-hidden">
-          <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+          <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 flex justify-between items-center">
             <h2 className="text-lg font-semibold text-gray-800 dark:text-white">
-              স্টাফ তালিকা ও হাজিরা - {new Date(selectedDate).toLocaleDateString('bn-BD', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+              স্টাফ তালিকা ও হাজিরা
             </h2>
+            <div className="flex items-center space-x-2 bg-white dark:bg-gray-800 p-1.5 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+              <Calendar size={18} className="text-gray-500 dark:text-gray-400" />
+              <input
+                type="date"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                className="bg-transparent border-none focus:ring-0 text-gray-700 dark:text-gray-300 font-medium text-sm p-0"
+              />
+            </div>
           </div>
           
           {employees.length === 0 ? (
@@ -270,6 +387,95 @@ export const Attendance: React.FC = () => {
           )}
         </div>
       </div>
+      ) : (
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+          <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <h2 className="text-lg font-semibold text-gray-800 dark:text-white flex items-center">
+              <DollarSign size={20} className="mr-2 text-green-600" />
+              মাসিক বেতন হিসাব
+            </h2>
+            <div className="flex items-center space-x-2 bg-white dark:bg-gray-800 p-2 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+              <Calendar size={20} className="text-gray-500 dark:text-gray-400" />
+              <input
+                type="month"
+                value={payrollMonth}
+                onChange={(e) => setPayrollMonth(e.target.value)}
+                className="bg-transparent border-none focus:ring-0 text-gray-700 dark:text-gray-300 font-medium"
+              />
+            </div>
+          </div>
+
+          <div className="overflow-x-auto whitespace-nowrap">
+            <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+              <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-300">
+                <tr>
+                  <th className="px-4 py-3">স্টাফের নাম</th>
+                  <th className="px-4 py-3 text-center">উপস্থিতি (দিন)</th>
+                  <th className="px-4 py-3 text-center">অনুপস্থিতি (দিন)</th>
+                  <th className="px-4 py-3 text-right">নির্ধারিত বেতন</th>
+                  <th className="px-4 py-3 text-right">কর্তন (অনুপস্থিতি + অগ্রিম)</th>
+                  <th className="px-4 py-3 text-right">প্রদেয় বেতন</th>
+                  <th className="px-4 py-3 text-center">স্ট্যাটাস</th>
+                  <th className="px-4 py-3 text-right">অ্যাকশন</th>
+                </tr>
+              </thead>
+              <tbody>
+                {employees.map((emp) => {
+                  const data = getPayrollData(emp.id);
+                  if (!data) return null;
+
+                  return (
+                    <tr key={emp.id} className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                      <td className="px-4 py-4 font-medium text-gray-900 dark:text-white">
+                        {emp.name}
+                      </td>
+                      <td className="px-4 py-4 text-center text-green-600 dark:text-green-400 font-medium">
+                        {data.presentDays}
+                      </td>
+                      <td className="px-4 py-4 text-center text-red-600 dark:text-red-400 font-medium">
+                        {data.absentDays}
+                      </td>
+                      <td className="px-4 py-4 text-right font-medium text-gray-900 dark:text-gray-100">
+                        {settings.currencySymbol}{emp.baseSalary}
+                      </td>
+                      <td className="px-4 py-4 text-right text-orange-600 dark:text-orange-400">
+                        {settings.currencySymbol}{data.absenceDeduction + data.advance}
+                        <div className="text-[10px] text-gray-500">
+                          (ছুটি: {data.absenceDeduction}, অগ্রিম: {data.advance})
+                        </div>
+                      </td>
+                      <td className="px-4 py-4 text-right font-bold text-blue-600 dark:text-blue-400 text-base">
+                        {settings.currencySymbol}{data.netSalary}
+                      </td>
+                      <td className="px-4 py-4 text-center">
+                        {data.isPaid ? (
+                          <span className="px-2 py-1 bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 rounded-full text-xs font-medium">
+                            পরিশোধিত
+                          </span>
+                        ) : (
+                          <span className="px-2 py-1 bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 rounded-full text-xs font-medium">
+                            বকেয়া
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-4 py-4 text-right">
+                        <button
+                          onClick={() => handlePaySalary(emp.id, data.netSalary)}
+                          disabled={data.isPaid || data.netSalary <= 0}
+                          className="flex items-center justify-center px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ml-auto"
+                        >
+                          <CreditCard size={16} className="mr-1" />
+                          পরিশোধ
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* Advance Payment Modal */}
       {isAdvanceModalOpen && (

@@ -1,12 +1,13 @@
 import React, { useState, useMemo } from 'react';
 import { useAppContext } from '../context/AppContext';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { Calendar, DollarSign, TrendingUp, Package, Wallet } from 'lucide-react';
-import { format, isToday, isThisWeek, isThisMonth } from 'date-fns';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
+import { Calendar, DollarSign, TrendingUp, Package, Wallet, AlertTriangle, PieChart as PieChartIcon, Download } from 'lucide-react';
+import { format, isToday, isThisWeek, isThisMonth, subDays } from 'date-fns';
+import { downloadCSV } from '../utils/export';
 
 export const Reports: React.FC = () => {
   const { sales, products, dayCloseRecords, setDayCloseRecords, expenses } = useAppContext();
-  const [activeTab, setActiveTab] = useState<'profit' | 'best-sellers' | 'day-close'>('profit');
+  const [activeTab, setActiveTab] = useState<'profit' | 'best-sellers' | 'category-sales' | 'low-stock' | 'day-close'>('profit');
   const [dayCloseNote, setDayCloseNote] = useState('');
   const [dateFilter, setDateFilter] = useState<'today' | 'week' | 'month' | 'all'>('all');
 
@@ -58,6 +59,26 @@ export const Reports: React.FC = () => {
       .slice(0, 10);
   }, [filteredSales]);
 
+  // Low Stock
+  const lowStockProducts = useMemo(() => {
+    return products.filter(p => p.stock <= 10).sort((a, b) => a.stock - b.stock);
+  }, [products]);
+
+  // Category Sales
+  const categorySales = useMemo(() => {
+    const categories: Record<string, number> = {};
+    filteredSales.forEach(sale => {
+      sale.items.forEach(item => {
+        const product = products.find(p => p.id === item.productId);
+        const category = product ? product.category : 'অন্যান্য';
+        categories[category] = (categories[category] || 0) + item.total;
+      });
+    });
+    return Object.entries(categories).map(([name, value]) => ({ name, value }));
+  }, [filteredSales, products]);
+
+  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658'];
+
   // Day Close
   const today = new Date().toISOString().split('T')[0];
   const todaysSales = useMemo(() => {
@@ -91,20 +112,83 @@ export const Reports: React.FC = () => {
     }
   };
 
+  const handleExportReport = () => {
+    let dataToExport: any[] = [];
+    let filename = '';
+
+    switch (activeTab) {
+      case 'profit':
+        dataToExport = [{
+          'তারিখ': dateFilter,
+          'মোট বিক্রয়': totalSalesAmount,
+          'মোট খরচ': totalExpensesAmount,
+          'প্রকৃত লাভ': netProfit
+        }];
+        filename = `profit_report_${dateFilter}`;
+        break;
+      case 'best-sellers':
+        dataToExport = bestSellers.map(item => ({
+          'পণ্যের নাম': item.name,
+          'মোট বিক্রিত পরিমাণ': item.quantity,
+          'মোট আয়': item.revenue
+        }));
+        filename = `best_sellers_${dateFilter}`;
+        break;
+      case 'category-sales':
+        dataToExport = categorySales.map(item => ({
+          'ক্যাটাগরি': item.name,
+          'মোট বিক্রয়': item.value
+        }));
+        filename = `category_sales_${dateFilter}`;
+        break;
+      case 'low-stock':
+        dataToExport = lowStockProducts.map(item => ({
+          'পণ্যের নাম': item.name,
+          'ক্যাটাগরি': item.category,
+          'বর্তমান স্টক': item.stock,
+          'স্ট্যাটাস': item.stock === 0 ? 'স্টক আউট' : 'লো স্টক'
+        }));
+        filename = 'low_stock_report';
+        break;
+      case 'day-close':
+        dataToExport = dayCloseRecords.map(record => ({
+          'তারিখ': new Date(record.date).toLocaleDateString('bn-BD'),
+          'মোট বিক্রয়': record.totalSales,
+          'নগদ গ্রহণ': record.totalCash,
+          'লাভ': record.totalProfit,
+          'নোট': record.note || ''
+        }));
+        filename = 'day_close_records';
+        break;
+    }
+
+    downloadCSV(dataToExport, `${filename}_${new Date().toISOString().split('T')[0]}`);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h1 className="text-2xl font-bold text-gray-800 dark:text-white">রিপোর্ট ও অ্যানালিটিক্স</h1>
-        <select
-          value={dateFilter}
-          onChange={(e) => setDateFilter(e.target.value as any)}
-          className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 outline-none"
-        >
-          <option value="today">আজ</option>
-          <option value="week">এই সপ্তাহ</option>
-          <option value="month">এই মাস</option>
-          <option value="all">সব সময়</option>
-        </select>
+        <div className="flex gap-2 w-full sm:w-auto">
+          <select
+            value={dateFilter}
+            onChange={(e) => setDateFilter(e.target.value as any)}
+            className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 outline-none flex-1 sm:flex-none"
+          >
+            <option value="today">আজ</option>
+            <option value="week">এই সপ্তাহ</option>
+            <option value="month">এই মাস</option>
+            <option value="all">সব সময়</option>
+          </select>
+          <button
+            onClick={handleExportReport}
+            className="flex items-center justify-center px-3 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg font-medium transition-colors whitespace-nowrap"
+            title="ডাউনলোড এক্সেল (CSV)"
+          >
+            <Download size={18} className="mr-1" />
+            <span className="hidden sm:inline">এক্সপোর্ট</span>
+          </button>
+        </div>
       </div>
 
       {/* Tabs */}
@@ -128,6 +212,26 @@ export const Reports: React.FC = () => {
           }`}
         >
           বেস্ট সেলার
+        </button>
+        <button
+          onClick={() => setActiveTab('category-sales')}
+          className={`px-4 py-2 rounded-t-lg font-medium transition-colors ${
+            activeTab === 'category-sales'
+              ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200 border-b-2 border-blue-600'
+              : 'text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800'
+          }`}
+        >
+          ক্যাটাগরি বিক্রয়
+        </button>
+        <button
+          onClick={() => setActiveTab('low-stock')}
+          className={`px-4 py-2 rounded-t-lg font-medium transition-colors ${
+            activeTab === 'low-stock'
+              ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200 border-b-2 border-blue-600'
+              : 'text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800'
+          }`}
+        >
+          লো-স্টক অ্যালার্ট
         </button>
         <button
           onClick={() => setActiveTab('day-close')}
@@ -224,6 +328,85 @@ export const Reports: React.FC = () => {
                       <td className="px-4 py-3 text-right">৳ {item.revenue.toLocaleString()}</td>
                     </tr>
                   ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Category Sales */}
+        {activeTab === 'category-sales' && (
+          <div className="space-y-6">
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">ক্যাটাগরি অনুযায়ী বিক্রয়</h3>
+            {categorySales.length > 0 ? (
+              <div className="h-80 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={categorySales}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={true}
+                      label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                      outerRadius={100}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {categorySales.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(value) => `৳ ${value}`} />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <p className="text-gray-500 dark:text-gray-400 text-center py-10">কোনো ডেটা পাওয়া যায়নি</p>
+            )}
+          </div>
+        )}
+
+        {/* Low Stock Alerts */}
+        {activeTab === 'low-stock' && (
+          <div className="space-y-6">
+            <div className="flex items-center gap-2 mb-4">
+              <AlertTriangle className="text-orange-500" size={24} />
+              <h3 className="text-lg font-semibold text-gray-800 dark:text-white">লো-স্টক অ্যালার্ট (স্টক ১০ বা তার কম)</h3>
+            </div>
+            
+            <div className="overflow-x-auto whitespace-nowrap">
+              <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+                <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-300">
+                  <tr>
+                    <th className="px-4 py-3">পণ্যের নাম</th>
+                    <th className="px-4 py-3">ক্যাটাগরি</th>
+                    <th className="px-4 py-3 text-right">বর্তমান স্টক</th>
+                    <th className="px-4 py-3 text-right">স্ট্যাটাস</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {lowStockProducts.map((product) => (
+                    <tr key={product.id} className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                      <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">{product.name}</td>
+                      <td className="px-4 py-3">{product.category}</td>
+                      <td className="px-4 py-3 text-right font-bold text-red-600 dark:text-red-400">{product.stock}</td>
+                      <td className="px-4 py-3 text-right">
+                        {product.stock === 0 ? (
+                          <span className="px-2 py-1 bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 rounded-full text-xs font-medium">স্টক আউট</span>
+                        ) : (
+                          <span className="px-2 py-1 bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400 rounded-full text-xs font-medium">লো স্টক</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                  {lowStockProducts.length === 0 && (
+                    <tr>
+                      <td colSpan={4} className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
+                        সব পণ্যের স্টক পর্যাপ্ত আছে।
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>

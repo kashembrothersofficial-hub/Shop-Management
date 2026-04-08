@@ -1,12 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAppContext } from '../context/AppContext';
-import { CartItem, Product, Sale, HeldSale } from '../utils/mockData';
+import { CartItem, Product, Sale, HeldSale, Quotation } from '../utils/mockData';
 import { extractBillData, ExtractedItem } from '../services/gemini';
-import { Camera, Search, Plus, Trash2, CheckCircle, Loader2, ShoppingCart, PauseCircle, PlayCircle, Printer, Share2, X } from 'lucide-react';
+import { Camera, Search, Plus, Trash2, CheckCircle, Loader2, ShoppingCart, PauseCircle, PlayCircle, Printer, Share2, X, FileText, Gift } from 'lucide-react';
 import { format } from 'date-fns';
 
 export const POS: React.FC = () => {
-  const { products, setProducts, sales, setSales, customers, setCustomers, settings, heldSales, setHeldSales } = useAppContext();
+  const { products, setProducts, sales, setSales, customers, setCustomers, settings, heldSales, setHeldSales, quotations, setQuotations } = useAppContext();
   
   const [cart, setCart] = useState<CartItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -14,12 +14,18 @@ export const POS: React.FC = () => {
   const [paidAmount, setPaidAmount] = useState<number | ''>('');
   const [discount, setDiscount] = useState<number | ''>('');
   const [vat, setVat] = useState<number | ''>('');
+  const [redeemPoints, setRedeemPoints] = useState<number | ''>('');
   const [isScanning, setIsScanning] = useState(false);
   const [showHeldSales, setShowHeldSales] = useState(false);
+  const [showQuotations, setShowQuotations] = useState(false);
   const [isMobileCartOpen, setIsMobileCartOpen] = useState(false);
   const [completedSale, setCompletedSale] = useState<Sale | null>(null);
+  const [completedQuotation, setCompletedQuotation] = useState<Quotation | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  const selectedCustomer = customers.find(c => c.name === customerName);
+  const availablePoints = selectedCustomer?.points || 0;
 
   const filteredProducts = products.filter(p => 
     p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -28,8 +34,10 @@ export const POS: React.FC = () => {
 
   const totalAmount = cart.reduce((sum, item) => sum + item.total, 0);
   const discountAmount = Number(discount) || 0;
+  const pointsDiscount = Number(redeemPoints) || 0;
+  const totalDiscount = discountAmount + pointsDiscount;
   const vatAmount = (totalAmount * (Number(vat) || 0)) / 100;
-  const finalTotal = totalAmount - discountAmount + vatAmount;
+  const finalTotal = totalAmount - totalDiscount + vatAmount;
   const dueAmount = finalTotal - (Number(paidAmount) || 0);
 
   // Keyboard Shortcuts
@@ -143,7 +151,38 @@ export const POS: React.FC = () => {
     setPaidAmount('');
     setDiscount('');
     setVat('');
+    setRedeemPoints('');
     alert("সেল হোল্ড করা হয়েছে!");
+  };
+
+  const handleCreateQuotation = () => {
+    if (cart.length === 0) {
+      alert("কার্টে কোনো পণ্য নেই!");
+      return;
+    }
+
+    const newQuotation: Quotation = {
+      id: `quot-${Date.now()}`,
+      date: new Date().toISOString(),
+      items: cart,
+      totalAmount,
+      discount: totalDiscount,
+      vat: vatAmount,
+      finalTotal,
+      customerName: customerName || 'সাধারণ ক্রেতা'
+    };
+
+    setQuotations([newQuotation, ...quotations]);
+    setCompletedQuotation(newQuotation);
+
+    // Reset cart
+    setCart([]);
+    setCustomerName('');
+    setPaidAmount('');
+    setDiscount('');
+    setVat('');
+    setRedeemPoints('');
+    setIsMobileCartOpen(false);
   };
 
   const restoreHeldSale = (heldSale: HeldSale) => {
@@ -158,6 +197,19 @@ export const POS: React.FC = () => {
     setShowHeldSales(false);
   };
 
+  const restoreQuotation = (quotation: Quotation) => {
+    if (cart.length > 0) {
+      if (!window.confirm("বর্তমান কার্টের আইটেম মুছে যাবে। আপনি কি নিশ্চিত?")) {
+        return;
+      }
+    }
+    setCart(quotation.items);
+    setCustomerName(quotation.customerName);
+    setDiscount(quotation.discount);
+    setVat(quotation.vat);
+    setShowQuotations(false);
+  };
+
   const handleCheckout = () => {
     if (cart.length === 0) {
       alert("কার্টে কোনো পণ্য নেই!");
@@ -167,14 +219,14 @@ export const POS: React.FC = () => {
     const totalProfit = cart.reduce((sum, item) => {
       const itemProfit = (item.price - (item.buyPrice || 0)) * item.quantity;
       return sum + itemProfit;
-    }, 0) - discountAmount;
+    }, 0) - totalDiscount;
 
     const newSale: Sale = {
       id: `sale-${Date.now()}`,
       date: new Date().toISOString(),
       items: cart,
       totalAmount,
-      discount: discountAmount,
+      discount: totalDiscount,
       vat: vatAmount,
       finalTotal,
       profit: totalProfit,
@@ -195,20 +247,29 @@ export const POS: React.FC = () => {
     });
     setProducts(updatedProducts);
 
-    // Update Customer Dues if applicable
-    if (dueAmount > 0 && customerName) {
+    // Calculate Earned Points (1 point per 100 Taka)
+    const earnedPoints = Math.floor(finalTotal / 100);
+
+    // Update Customer Dues and Points if applicable
+    if (customerName) {
       const existingCustomerIndex = customers.findIndex(c => c.name === customerName);
       if (existingCustomerIndex !== -1) {
         const updatedCustomers = [...customers];
-        updatedCustomers[existingCustomerIndex].totalDue += dueAmount;
+        if (dueAmount > 0) {
+          updatedCustomers[existingCustomerIndex].totalDue += dueAmount;
+        }
+        // Deduct redeemed points, add earned points
+        const currentPoints = updatedCustomers[existingCustomerIndex].points || 0;
+        updatedCustomers[existingCustomerIndex].points = currentPoints - pointsDiscount + earnedPoints;
         setCustomers(updatedCustomers);
       } else {
         setCustomers([...customers, {
           id: `c-${Date.now()}`,
           name: customerName,
           phone: '',
-          totalDue: dueAmount,
-          payments: []
+          totalDue: dueAmount > 0 ? dueAmount : 0,
+          payments: [],
+          points: earnedPoints
         }]);
       }
     }
@@ -222,6 +283,7 @@ export const POS: React.FC = () => {
     setPaidAmount('');
     setDiscount('');
     setVat('');
+    setRedeemPoints('');
     setIsMobileCartOpen(false);
   };
 
@@ -319,6 +381,18 @@ export const POS: React.FC = () => {
             <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">বর্তমান বিক্রয়</h2>
           </div>
           <div className="flex gap-2">
+            <button
+              onClick={() => setShowQuotations(true)}
+              className="p-2 text-indigo-600 hover:bg-indigo-100 dark:text-indigo-400 dark:hover:bg-indigo-900/30 rounded-lg transition-colors relative"
+              title="কোটেশন দেখুন"
+            >
+              <FileText size={20} />
+              {quotations.length > 0 && (
+                <span className="absolute -top-1 -right-1 bg-indigo-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+                  {quotations.length}
+                </span>
+              )}
+            </button>
             <button
               onClick={() => setShowHeldSales(true)}
               className="p-2 text-blue-600 hover:bg-blue-100 dark:text-blue-400 dark:hover:bg-blue-900/30 rounded-lg transition-colors relative"
@@ -428,13 +502,40 @@ export const POS: React.FC = () => {
           </div>
           
           <div className="space-y-2 pt-2">
-            <input
-              type="text"
-              placeholder="ক্রেতার নাম (ঐচ্ছিক)"
-              value={customerName}
-              onChange={(e) => setCustomerName(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 outline-none"
-            />
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="ক্রেতার নাম (ঐচ্ছিক)"
+                value={customerName}
+                onChange={(e) => setCustomerName(e.target.value)}
+                list="customers-list"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 outline-none"
+              />
+              <datalist id="customers-list">
+                {customers.map(c => <option key={c.id} value={c.name} />)}
+              </datalist>
+            </div>
+
+            {selectedCustomer && availablePoints > 0 && (
+              <div className="flex items-center justify-between bg-yellow-50 dark:bg-yellow-900/20 p-2 rounded border border-yellow-200 dark:border-yellow-800/30">
+                <div className="flex items-center text-yellow-700 dark:text-yellow-500 text-sm">
+                  <Gift size={16} className="mr-1" />
+                  <span>পয়েন্ট: {availablePoints}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <label className="text-xs text-gray-600 dark:text-gray-400">রিডিম:</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max={availablePoints}
+                    value={redeemPoints}
+                    onChange={(e) => setRedeemPoints(e.target.value ? Math.min(Number(e.target.value), availablePoints) : '')}
+                    className="w-16 px-1 py-0.5 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-sm outline-none"
+                  />
+                </div>
+              </div>
+            )}
+
             <div className="flex gap-2">
               <input
                 id="paid-amount-input"
@@ -453,14 +554,24 @@ export const POS: React.FC = () => {
             </div>
           </div>
 
-          <button
-            onClick={handleCheckout}
-            disabled={cart.length === 0}
-            className="w-full flex items-center justify-center py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold text-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <CheckCircle className="mr-2" size={24} />
-            চেকআউট (Ctrl+Enter)
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={handleCreateQuotation}
+              disabled={cart.length === 0}
+              className="flex-1 flex items-center justify-center py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <FileText className="mr-2" size={18} />
+              কোটেশন
+            </button>
+            <button
+              onClick={handleCheckout}
+              disabled={cart.length === 0}
+              className="flex-[2] flex items-center justify-center py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold text-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <CheckCircle className="mr-2" size={24} />
+              চেকআউট (Ctrl+Enter)
+            </button>
+          </div>
         </div>
       </div>
 
@@ -506,6 +617,46 @@ export const POS: React.FC = () => {
                         <PlayCircle size={20} />
                       </button>
                       <button onClick={() => setHeldSales(heldSales.filter(h => h.id !== hs.id))} className="p-2 bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/50 dark:text-red-300 rounded-lg">
+                        <Trash2 size={20} />
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Quotations Modal */}
+      {showQuotations && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">সংরক্ষিত কোটেশন</h2>
+              <button onClick={() => setShowQuotations(false)} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                <X size={24} />
+              </button>
+            </div>
+            <div className="p-4 overflow-y-auto space-y-3">
+              {quotations.length === 0 ? (
+                <p className="text-center text-gray-500 dark:text-gray-400 py-4">কোনো কোটেশন নেই</p>
+              ) : (
+                quotations.map(q => (
+                  <div key={q.id} className="p-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-700/50 flex justify-between items-center">
+                    <div>
+                      <p className="font-bold text-gray-900 dark:text-gray-100">{q.customerName}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{format(new Date(q.date), 'dd/MM/yyyy hh:mm a')}</p>
+                      <p className="text-sm text-indigo-600 dark:text-indigo-400 font-bold">৳{q.finalTotal}</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <button onClick={() => setCompletedQuotation(q)} className="p-2 bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-200 rounded-lg" title="প্রিন্ট">
+                        <Printer size={20} />
+                      </button>
+                      <button onClick={() => restoreQuotation(q)} className="p-2 bg-indigo-100 text-indigo-700 hover:bg-indigo-200 dark:bg-indigo-900/50 dark:text-indigo-300 rounded-lg" title="সেলে রূপান্তর">
+                        <ShoppingCart size={20} />
+                      </button>
+                      <button onClick={() => setQuotations(quotations.filter(x => x.id !== q.id))} className="p-2 bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/50 dark:text-red-300 rounded-lg">
                         <Trash2 size={20} />
                       </button>
                     </div>
@@ -614,6 +765,96 @@ export const POS: React.FC = () => {
               <button
                 onClick={() => window.print()}
                 className="flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+              >
+                <Printer size={18} className="mr-2" />
+                প্রিন্ট করুন
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Quotation Print Modal */}
+      {completedQuotation && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+              <div className="flex items-center text-indigo-600 dark:text-indigo-400">
+                <FileText className="mr-2" size={24} />
+                <h2 className="text-xl font-bold">কোটেশন / এস্টিমেট</h2>
+              </div>
+              <button onClick={() => setCompletedQuotation(null)} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                <X size={24} />
+              </button>
+            </div>
+            
+            <div id="quotation-content" className="p-6 overflow-y-auto bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
+              <div className="text-center mb-6 border-b border-dashed border-gray-300 dark:border-gray-600 pb-4">
+                <h3 className="text-2xl font-bold mb-1">{settings.shopName}</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{settings.address}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">ফোন: {settings.phone}</p>
+                <p className="text-sm font-bold mt-2 border border-gray-300 dark:border-gray-600 inline-block px-3 py-1 rounded">ESTIMATE / QUOTATION</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">তারিখ: {format(new Date(completedQuotation.date), 'dd/MM/yyyy hh:mm a')}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 font-mono mt-1">কোটেশন নং: {completedQuotation.id}</p>
+              </div>
+
+              <div className="mb-4">
+                <p><span className="font-medium">ক্রেতার নাম:</span> {completedQuotation.customerName}</p>
+              </div>
+
+              <table className="w-full mb-6 text-sm">
+                <thead>
+                  <tr className="border-b border-gray-200 dark:border-gray-700">
+                    <th className="text-left py-2">বিবরণ</th>
+                    <th className="text-center py-2">পরিমাণ</th>
+                    <th className="text-right py-2">দর</th>
+                    <th className="text-right py-2">মোট</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
+                  {completedQuotation.items.map((item, idx) => (
+                    <tr key={idx}>
+                      <td className="py-2">{item.name}</td>
+                      <td className="text-center py-2">{item.quantity}</td>
+                      <td className="text-right py-2">৳{item.price}</td>
+                      <td className="text-right py-2 font-medium">৳{item.total}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              <div className="space-y-2 border-t border-gray-200 dark:border-gray-700 pt-4">
+                <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                  <span>মোট:</span>
+                  <span>৳{completedQuotation.totalAmount}</span>
+                </div>
+                {completedQuotation.discount > 0 && (
+                  <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                    <span>ডিসকাউন্ট:</span>
+                    <span>-৳{completedQuotation.discount}</span>
+                  </div>
+                )}
+                {completedQuotation.vat > 0 && (
+                  <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                    <span>ভ্যাট:</span>
+                    <span>+৳{completedQuotation.vat}</span>
+                  </div>
+                )}
+                <div className="flex justify-between font-bold text-lg pt-2 border-t border-gray-200 dark:border-gray-700">
+                  <span>সর্বমোট এস্টিমেট:</span>
+                  <span>৳{completedQuotation.finalTotal}</span>
+                </div>
+              </div>
+
+              <div className="mt-8 text-center text-sm text-gray-500 dark:text-gray-400">
+                <p>এটি একটি এস্টিমেট মাত্র, কোনো ক্যাশ মেমো নয়।</p>
+              </div>
+            </div>
+
+            <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 flex justify-end gap-3">
+              <button
+                onClick={() => window.print()}
+                className="flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors"
               >
                 <Printer size={18} className="mr-2" />
                 প্রিন্ট করুন

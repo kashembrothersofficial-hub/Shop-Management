@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { ReturnRecord } from '../utils/mockData';
+import { downloadCSV } from '../utils/export';
 import { format } from 'date-fns';
-import { Plus, RotateCcw, Trash2 } from 'lucide-react';
+import { Plus, RotateCcw, Trash2, Download } from 'lucide-react';
 
 export const Returns: React.FC = () => {
   const { returns, setReturns, products, setProducts } = useAppContext();
@@ -53,6 +54,17 @@ export const Returns: React.FC = () => {
     setDate(new Date().toISOString().split('T')[0]);
   };
 
+  const handleExportCSV = () => {
+    const dataToExport = returns.map(r => ({
+      'তারিখ': format(new Date(r.date), 'dd/MM/yyyy'),
+      'প্রোডাক্টের নাম': r.productName,
+      'ধরন': r.type === 'return' ? 'ফেরত' : 'ড্যামেজ',
+      'পরিমাণ': r.quantity,
+      'নোট': r.note || ''
+    }));
+    downloadCSV(dataToExport, `returns_damages_${new Date().toISOString().split('T')[0]}`);
+  };
+
   return (
     <div className="flex flex-col h-full bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
       <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row justify-between items-center gap-4 bg-gray-50 dark:bg-gray-800/50">
@@ -65,13 +77,23 @@ export const Returns: React.FC = () => {
             ফেরত এবং নষ্ট হওয়া পণ্যের হিসাব
           </p>
         </div>
-        <button
-          onClick={() => setIsAddModalOpen(true)}
-          className="w-full sm:w-auto px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2 shadow-sm"
-        >
-          <Plus size={20} />
-          নতুন এন্ট্রি যোগ করুন
-        </button>
+        <div className="flex gap-2 w-full sm:w-auto">
+          <button
+            onClick={handleExportCSV}
+            className="flex items-center justify-center px-3 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg font-medium transition-colors whitespace-nowrap"
+            title="ডাউনলোড এক্সেল (CSV)"
+          >
+            <Download size={18} className="mr-1" />
+            <span className="hidden sm:inline">এক্সপোর্ট</span>
+          </button>
+          <button
+            onClick={() => setIsAddModalOpen(true)}
+            className="flex-1 sm:flex-none px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2 shadow-sm"
+          >
+            <Plus size={20} />
+            নতুন এন্ট্রি
+          </button>
+        </div>
       </div>
 
       <div className="flex-1 overflow-x-auto whitespace-nowrap">
