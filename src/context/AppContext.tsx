@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { useAuth } from '../hooks/useAuth';
 import { Product, Sale, Customer, Supplier, ShopSettings, HeldSale, Employee, AttendanceRecord, DayCloseRecord, User, Expense, ReturnRecord, Quotation, SalaryRecord, initialProducts, initialSales, initialCustomers, initialSuppliers, initialSettings, initialEmployees } from '../utils/mockData';
 
 interface AppContextType {
@@ -6,6 +7,9 @@ interface AppContextType {
   toggleTheme: () => void;
   currentUser: User | null;
   setCurrentUser: React.Dispatch<React.SetStateAction<User | null>>;
+  authLoading: boolean;
+  authError: string | null;
+  signOut: () => Promise<void>;
   products: Product[];
   setProducts: React.Dispatch<React.SetStateAction<Product[]>>;
   sales: Sale[];
@@ -37,16 +41,16 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  // Keep theme and auth in localStorage so you don't get logged out on every refresh during development
+  // Keep theme in localStorage
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     const saved = localStorage.getItem('theme');
     return (saved as 'light' | 'dark') || 'light';
   });
 
-  const [currentUser, setCurrentUser] = useState<User | null>(() => {
-    const saved = localStorage.getItem('currentUser');
-    return saved ? JSON.parse(saved) : null;
-  });
+  // Use Supabase auth hook
+  const { user: supabaseUser, loading: authLoading, error: authError, signOut: supabaseSignOut } = useAuth();
+
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
 
   // Business Data - In-Memory Only (No localStorage)
   const [products, setProducts] = useState<Product[]>(initialProducts);
@@ -63,6 +67,21 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [quotations, setQuotations] = useState<Quotation[]>([]);
   const [salaryRecords, setSalaryRecords] = useState<SalaryRecord[]>([]);
 
+  // Sync Supabase user with currentUser
+  useEffect(() => {
+    if (supabaseUser) {
+      const user: User = {
+        id: supabaseUser.id,
+        name: supabaseUser.user_metadata?.name || supabaseUser.email?.split('@')[0] || 'User',
+        role: supabaseUser.user_metadata?.role || 'cashier',
+        pin: '', // Not used with Supabase
+      };
+      setCurrentUser(user);
+    } else {
+      setCurrentUser(null);
+    }
+  }, [supabaseUser]);
+
   useEffect(() => {
     localStorage.setItem('theme', theme);
     if (theme === 'dark') {
@@ -72,20 +91,23 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   }, [theme]);
 
-  useEffect(() => {
-    if (currentUser) {
-      localStorage.setItem('currentUser', JSON.stringify(currentUser));
-    } else {
-      localStorage.removeItem('currentUser');
-    }
-  }, [currentUser]);
-
   const toggleTheme = () => setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
+
+  const handleSignOut = async () => {
+    try {
+      await supabaseSignOut();
+    } catch (error) {
+      console.error('Sign out error:', error);
+    }
+  };
 
   return (
     <AppContext.Provider value={{ 
       theme, toggleTheme, 
       currentUser, setCurrentUser,
+      authLoading, 
+      authError: authError?.message || null,
+      signOut: handleSignOut,
       products, setProducts, 
       sales, setSales, 
       customers, setCustomers, 
